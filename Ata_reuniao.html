@@ -195,10 +195,13 @@
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
                 color: #212121;
+                margin: 0; /* Remove margens do corpo para impressão */
+                padding: 0; /* Remove padding do corpo para impressão */
             }
             .container {
                 max-width: 100% !important;
-                padding: 0 !important;
+                padding: 10mm 15mm !important; /* Adiciona padding para as margens da página no PDF */
+                box-sizing: border-box; /* Inclui padding na largura total */
             }
             .card {
                 box-shadow: none !important;
@@ -211,18 +214,29 @@
                 box-shadow: none !important;
                 border-radius: 0 !important;
                 padding: 1rem 1.5rem !important;
+                display: flex; /* Garante que logo e título fiquem lado a lado */
+                align-items: center; /* Centraliza verticalmente */
+                justify-content: flex-start; /* Alinha à esquerda */
             }
             .header-gradient h1 {
                 font-size: 2.5rem !important; /* Larger title in print */
+                line-height: 1.2; /* Ajusta line height para evitar quebras */
+                word-wrap: break-word; /* Quebra palavras longas */
+                white-space: normal; /* Permite quebra de linha normal */
             }
             .header-gradient p {
                 font-size: 1.2rem !important; /* Larger subtitle in print */
+                line-height: 1.2;
+                word-wrap: break-word;
+                white-space: normal;
             }
             .section-title {
                 border-left: 4px solid #DC2626 !important;
                 padding-left: 1rem !important;
                 margin-bottom: 1rem !important;
                 color: #1a202c !important;
+                word-wrap: break-word;
+                white-space: normal;
             }
             input[type="date"], select.status-select, select.priority-select {
                 -webkit-appearance: none;
@@ -243,6 +257,8 @@
                 background-color: transparent !important;
                 box-shadow: none !important;
                 padding: 0 !important;
+                word-wrap: break-word; /* Garante quebra de palavras */
+                white-space: normal; /* Permite quebra de linha normal */
             }
             .remove-task-btn, .toggle-add-task-form-btn, .add-task-inline-form,
             #generateOverallSummaryBtn, #saveAsHtmlBtn, #saveAsPdfBtn, .modal,
@@ -276,6 +292,8 @@
                 color: #212121 !important;
                 border: 1px solid #ccc !important;
                 padding: 0.1rem 0.5rem !important;
+                word-wrap: break-word;
+                white-space: normal;
             }
             .status-pendente, .status-concluido, .status-em-progresso,
             .priority-alta, .priority-media, .priority-baixa {
@@ -284,11 +302,18 @@
             footer {
                 margin-top: 2rem !important;
                 color: #616161 !important;
+                word-wrap: break-word;
+                white-space: normal;
             }
             .header-logo {
                 display: block !important;
                 max-width: 80px !important; /* Ajusta o tamanho da logo para impressão */
                 margin-right: 0.5rem !important;
+            }
+            /* Garante que as descrições das tarefas também quebrem corretamente */
+            .task-item .task-description {
+                word-wrap: break-word;
+                white-space: normal;
             }
         }
     </style>
@@ -738,7 +763,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
