@@ -280,7 +280,7 @@
                 <h1 class="text-3xl sm:text-4xl font-bold mb-2" contenteditable="true">Ata de Reunião</h1>
                 <p class="text-lg sm:text-xl font-light" contenteditable="true">25 de Junho de 2025</p>
                 <div class="text-sm mt-2 font-medium">
-                    <span class="font-semibold">ID do Utilizador: </span><span id="userIdDisplay">Carregando...</span>
+                    <span class="font-semibold">ID do Utilizador: </span><span id="userIdDisplay">Gerando ID...</span>
                 </div>
             </div>
             <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
@@ -569,7 +569,7 @@
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
                                 <option value="em-progresso">Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluido</option>
+                                <option value="concluido">Concluído</option>
                             </select>
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
                                 <option value="alta">Alta</option>
@@ -617,7 +617,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluido</option>
+                                <option value="concluido">Concluído</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
@@ -853,7 +853,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluido</option>
+                                <option value="concluido">Concluído</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-baixa">
@@ -976,27 +976,45 @@
         </div>
     </div>
 
+    <!-- Modal para Configuração Gemini API -->
+    <div id="configModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeConfigModal">&times;</span>
+            <h3 id="configModalTitle" class="text-xl font-bold mb-4 text-gray-800">Configuração Necessária</h3>
+            <div id="configModalBody" class="text-gray-700 mb-4">
+                <p class="mb-4">Para que a funcionalidade de gerar resumos funcione, por favor, insira a sua chave da API Gemini.</p>
+                <p class="mb-2 font-semibold">Chave da API Gemini:</p>
+                <p class="text-sm text-gray-600 mb-2">Obtenha a sua chave no <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-600 hover:underline">Google AI Studio</a>.</p>
+                <input type="text" id="geminiApiKey" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 mb-4">
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="saveConfigBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-sm shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300">Guardar Configuração</button>
+                <button id="resetConfigBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-sm shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300">Redefinir</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
-        // Importa as funções necessárias do Firebase SDK
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Não há imports do Firebase SDK, pois o Firebase foi removido.
 
-        // Variáveis globais do ambiente Canvas
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // Variáveis globais do ambiente Canvas (não usadas, mas mantidas como null para compatibilidade)
+        const canvasAppId = null;
+        const canvasFirebaseConfig = null;
+        const canvasInitialAuthToken = null;
 
-        // Inicializa o Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        let currentUserId = null; // ID do utilizador gerado localmente, sem persistência
 
-        let currentUserId = null;
-        let unsubscribeSnapshot = null; // Para gerenciar a subscrição do Firestore
+        const LOCAL_STORAGE_CONFIG_KEY = 'ataMeetingAppConfig'; // Usado para guardar a chave Gemini
 
-        let currentFilter = 'all'; // 'all', 'pendente', 'em-progresso', 'concluido'
-        let currentSort = 'default'; // 'default', 'deadline', 'status', 'priority', 'description'
+        // Elements for config modal
+        const configModal = document.getElementById('configModal');
+        const closeConfigModalBtn = document.getElementById('closeConfigModal');
+        const saveConfigBtn = document.getElementById('saveConfigBtn');
+        const resetConfigBtn = document.getElementById('resetConfigBtn');
+
+        // Apenas input para a chave Gemini, inputs Firebase removidos
+        const geminiApiKeyInput = document.getElementById('geminiApiKey');
+
 
         document.addEventListener('DOMContentLoaded', () => {
             const generateOverallSummaryBtn = document.getElementById('generateOverallSummaryBtn');
@@ -1016,220 +1034,101 @@
             const participantsList = document.getElementById('participantsList');
             const footerDate = document.querySelector('footer p[contenteditable="true"]');
 
+            // Declarations for currentFilter and currentSort
+            let currentFilter = 'all'; // 'all', 'pendente', 'em-progresso', 'concluido'
+            let currentSort = 'default'; // 'default', 'deadline', 'status', 'priority', 'description'
+
             const filterStatusSelect = document.getElementById('filterStatus');
             const sortOrderSelect = document.getElementById('sortOrder');
 
-            // --- Firebase Authentication e Carregamento Inicial ---
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    currentUserId = user.uid;
-                    userIdDisplay.textContent = currentUserId;
-                    console.log('Utilizador autenticado:', currentUserId);
-                    await loadMeetingData(currentUserId);
-                } else {
-                    console.log('Nenhum utilizador autenticado. Tentando login anónimo...');
-                    try {
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    } catch (error) {
-                        console.error('Erro ao autenticar:', error);
-                        userIdDisplay.textContent = 'Erro de autenticação';
-                        showModal('Erro de Autenticação', 'Não foi possível autenticar o utilizador. Por favor, tente novamente.');
-                    }
-                }
-            });
+            // Initial call to set up app logic (no Firebase init)
+            initAppLogic();
 
-            // Função para carregar dados da reunião do Firestore
-            async function loadMeetingData(userId) {
-                if (unsubscribeSnapshot) {
-                    unsubscribeSnapshot(); // Cancela a subscrição anterior se existir
-                }
-
-                const meetingDocRef = doc(db, `artifacts/${appId}/users/${userId}/meetings`, 'currentMeeting');
-                console.log('Tentando carregar dados de:', meetingDocRef.path);
-
-                unsubscribeSnapshot = onSnapshot(meetingDocRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        console.log('Dados da ata carregados do Firestore:', data);
-                        renderMeetingData(data);
-                        applyFiltersAndSort(); // Aplica filtros e ordenação após carregar
-                    } else {
-                        console.log('Nenhuma ata encontrada para este utilizador. Criando uma nova.');
-                        // Opcional: Popular com dados iniciais se não houver ata
-                        saveMeetingData(); // Salva a ata inicial do HTML
-                    }
-                }, (error) => {
-                    console.error('Erro ao receber updates do Firestore:', error);
-                    showModal('Erro de Sincronização', 'Ocorreu um erro ao sincronizar os dados da ata. Verifique a sua conexão ou tente recarregar.');
-                });
+            // --- Config Modal Functions ---
+            function showConfigModal(title, message) {
+                document.getElementById('configModalTitle').textContent = title;
+                document.getElementById('configModalBody').querySelector('p').textContent = message; // Update message
+                const config = loadConfig();
+                geminiApiKeyInput.value = config.geminiApiKey || '';
+                configModal.style.display = 'flex';
             }
 
-            // Função para renderizar os dados da reunião na UI
-            function renderMeetingData(data) {
-                meetingTitle.textContent = data.title || 'Ata de Reunião';
-                meetingDate.textContent = data.date || '25 de Junho de 2025';
-                nextMeetingDate.textContent = data.nextMeeting || '30 de Julho de 2025 às 15:00';
-
-                // Limpa a lista de participantes e adiciona os novos
-                participantsList.innerHTML = '';
-                if (data.participants && Array.isArray(data.participants)) {
-                    data.participants.forEach(p => {
-                        const li = document.createElement('li');
-                        li.contentEditable = true;
-                        li.textContent = p;
-                        li.classList.add('text-gray-800'); // Adiciona classe para cor de texto
-                        participantsList.appendChild(li);
-                    });
-                }
-
-                // Limpa o container de tarefas e adiciona os novos grupos/tarefas
-                tasksContainer.innerHTML = '';
-                if (data.taskGroups && Array.isArray(data.taskGroups)) {
-                    data.taskGroups.forEach(groupData => {
-                        const groupDiv = document.createElement('div');
-                        groupDiv.classList.add('mb-6', 'task-group');
-                        groupDiv.setAttribute('data-responsible', groupData.responsible);
-
-                        const h3 = document.createElement('h3');
-                        h3.classList.add('text-xl', 'font-bold', 'mb-2', 'text-gray-800');
-                        h3.contentEditable = true;
-                        h3.textContent = groupData.title;
-                        groupDiv.appendChild(h3);
-
-                        if (groupData.isPresentationList) {
-                            const ul = document.createElement('ul');
-                            ul.classList.add('list-disc', 'list-inside', 'text-gray-700');
-                            ul.id = 'presentationsList'; // Manter o ID para o grupo de apresentações
-                            groupData.tasks.forEach(task => {
-                                const li = document.createElement('li');
-                                li.contentEditable = true;
-                                li.textContent = task.description;
-                                li.classList.add('text-gray-800'); // Adiciona classe para cor de texto
-                                ul.appendChild(li);
-                            });
-                            groupDiv.appendChild(ul);
-                        } else {
-                            groupData.tasks.forEach(taskData => {
-                                const taskItem = document.createElement('div');
-                                taskItem.classList.add('task-item', 'py-3');
-                                taskItem.innerHTML = `
-                                    <p class="text-gray-700 task-description" contenteditable="true">${taskData.description}</p>
-                                    <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
-                                        <label class="text-gray-600">Prazo:</label>
-                                        <input type="date" value="${taskData.deadline || ''}" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
-                                        <label class="text-gray-600">Estado:</label>
-                                        <select class="status-select border rounded px-2 py-1 text-sm status-${taskData.status}">
-                                            <option value="em-progresso" ${taskData.status === 'em-progresso' ? 'selected' : ''}>Em Progresso</option>
-                                            <option value="pendente" ${taskData.status === 'pendente' ? 'selected' : ''}>Pendente</option>
-                                            <option value="concluido" ${taskData.status === 'concluido' ? 'selected' : ''}>Concluído</option>
-                                        </select>
-                                        <label class="text-gray-600">Prioridade:</label>
-                                        <select class="priority-select border rounded px-2 py-1 text-sm priority-${taskData.priority || 'media'}">
-                                            <option value="alta" ${taskData.priority === 'alta' ? 'selected' : ''}>Alta</option>
-                                            <option value="media" ${taskData.priority === 'media' ? 'selected' : ''}>Média</option>
-                                            <option value="baixa" ${taskData.priority === 'baixa' ? 'selected' : ''}>Baixa</option>
-                                        </select>
-                                    </div>
-                                    <div class="flex space-x-2 mt-3">
-                                        <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
-                                    </div>
-                                `;
-                                groupDiv.appendChild(taskItem);
-                            });
-                        }
-
-                        // Adiciona o formulário inline de adição de tarefas ao grupo
-                        const inlineFormHtml = `
-                            <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
-                                <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Tarefa:</h4>
-                                <textarea class="shadow-sm border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2 task-description-input-inline" rows="2" placeholder="Descrição da tarefa..."></textarea>
-                                <div class="flex flex-wrap space-x-2 mb-2">
-                                    <input type="date" class="shadow-sm border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-deadline-input-inline">
-                                    <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
-                                        <option value="em-progresso">Em Progresso</option>
-                                        <option value="pendente">Pendente</option>
-                                        <option value="concluido">Concluído</option>
-                                    </select>
-                                    <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
-                                        <option value="alta">Alta</option>
-                                        <option value="media" selected>Média</option>
-                                        <option value="baixa">Baixa</option>
-                                    </select>
-                                </div>
-                                <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 add-task-inline-btn">Adicionar</button>
-                                <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-2 cancel-add-task-inline-btn">Cancelar</button>
-                            </div>
-                            <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 toggle-add-task-form-btn mt-4">Adicionar Tarefa a este grupo +</button>
-                        `;
-                        groupDiv.insertAdjacentHTML('beforeend', inlineFormHtml);
-                        tasksContainer.appendChild(groupDiv);
-                    });
-                }
-                renumberTaskGroups(); // Re-numera após carregar
-                attachListeners(); // Re-anexa listeners após renderizar
-                addInputListeners(); // Adiciona listeners para salvar no Firestore
+            function hideConfigModal() {
+                configModal.style.display = 'none';
             }
 
-            // Função para salvar os dados da reunião no Firestore
-            async function saveMeetingData() {
-                if (!currentUserId) {
-                    console.warn('Não há utilizador autenticado para salvar os dados.');
+            function loadConfig() {
+                try {
+                    const storedConfig = localStorage.getItem(LOCAL_STORAGE_CONFIG_KEY);
+                    return storedConfig ? JSON.parse(storedConfig) : {};
+                } catch (e) {
+                    console.error('Erro ao carregar configuração do localStorage:', e);
+                    return {};
+                }
+            }
+
+            function saveConfigToLocalStorage() {
+                const config = {
+                    geminiApiKey: geminiApiKeyInput.value.trim()
+                };
+                localStorage.setItem(LOCAL_STORAGE_CONFIG_KEY, JSON.stringify(config));
+                console.log('Configuração salva no localStorage.');
+                return config;
+            }
+
+            function resetConfig() {
+                localStorage.removeItem(LOCAL_STORAGE_CONFIG_KEY);
+                geminiApiKeyInput.value = '';
+                console.log('Configuração redefinida.');
+                initAppLogic(); // Re-initialize app logic to reflect the reset
+            }
+
+            saveConfigBtn.addEventListener('click', () => {
+                const newConfig = saveConfigToLocalStorage();
+                if (!newConfig.geminiApiKey) {
+                    showModal('Atenção', 'Por favor, preencha a Chave da API Gemini.');
                     return;
                 }
+                hideConfigModal();
+                initAppLogic(); // Re-initialize app logic with new config
+            });
 
-                const dataToSave = {
-                    title: meetingTitle.textContent.trim(),
-                    date: meetingDate.textContent.trim(),
-                    nextMeeting: nextMeetingDate.textContent.trim(),
-                    participants: Array.from(participantsList.children).map(li => li.textContent.trim()),
-                    taskGroups: [],
-                    lastUpdated: new Date()
-                };
+            closeConfigModalBtn.addEventListener('click', hideConfigModal);
+            resetConfigBtn.addEventListener('click', resetConfig);
 
-                const taskGroups = document.querySelectorAll('.task-group');
-                taskGroups.forEach(groupDiv => {
-                    const groupTitle = groupDiv.querySelector('h3').textContent.trim();
-                    const responsible = groupDiv.dataset.responsible;
-                    const isPresentationList = groupDiv.querySelector('#presentationsList') !== null;
+            // --- App Logic (without Firebase) ---
+            async function initAppLogic() {
+                const config = loadConfig();
+                const geminiKey = config.geminiApiKey;
 
-                    const tasks = [];
-                    if (isPresentationList) {
-                        Array.from(groupDiv.querySelectorAll('#presentationsList li')).forEach(li => {
-                            tasks.push({ description: li.textContent.trim() });
-                        });
-                    } else {
-                        Array.from(groupDiv.querySelectorAll('.task-item')).forEach(taskItem => {
-                            const description = taskItem.querySelector('.task-description').textContent.trim();
-                            const deadline = taskItem.querySelector('input[type="date"]').value;
-                            const status = taskItem.querySelector('.status-select').value;
-                            const priority = taskItem.querySelector('.priority-select').value;
-                            tasks.push({ description, deadline, status, priority });
-                        });
-                    }
-
-                    dataToSave.taskGroups.push({
-                        title: groupTitle,
-                        responsible: responsible,
-                        isPresentationList: isPresentationList,
-                        tasks: tasks
-                    });
-                });
-
-                const meetingDocRef = doc(db, `artifacts/${appId}/users/${currentUserId}/meetings`, 'currentMeeting');
-                try {
-                    await setDoc(meetingDocRef, dataToSave, { merge: true });
-                    console.log('Ata salva no Firestore com sucesso!');
-                } catch (error) {
-                    console.error('Erro ao salvar ata no Firestore:', error);
-                    showModal('Erro ao Salvar', 'Não foi possível salvar a ata. Por favor, verifique a sua conexão.');
+                if (!geminiKey) {
+                    showConfigModal('Configuração Necessária', 'Por favor, insira a sua chave da API Gemini para usar a funcionalidade de resumo.');
                 }
+
+                // Generate a random user ID for this session (no persistence)
+                if (!currentUserId) {
+                    currentUserId = crypto.randomUUID(); // Generates a unique ID
+                    userIdDisplay.textContent = currentUserId;
+                    console.log('ID do Utilizador gerado para a sessão:', currentUserId);
+                }
+
+                // Since Firebase is removed, data loading is no longer from Firestore.
+                // The initial data is already in the HTML.
+                // We just need to ensure listeners are attached and filters applied.
+                attachListeners();
+                addInputListeners();
+                applyFiltersAndSort();
             }
 
-            // Adiciona listeners para salvar automaticamente quando o conteúdo editável muda
+            // Função para salvar os dados da reunião (apenas para HTML/PDF export)
+            // Não há mais salvamento automático em base de dados externa.
+            function saveMeetingData() {
+                // Esta função agora apenas simula o "salvar" para que os listeners não falhem.
+                // Os dados são manipulados no DOM diretamente.
+                console.log('Dados atualizados no DOM. Para persistência, use as opções de exportar HTML/PDF.');
+            }
+
+            // Adiciona listeners para quando o conteúdo editável muda
             function addInputListeners() {
                 document.querySelectorAll('[contenteditable="true"]').forEach(element => {
                     element.removeEventListener('input', saveMeetingData); // Evita duplicação
@@ -1255,19 +1154,17 @@
                 });
             }
 
-            // Nova função para lidar com a mudança nos selects e salvar
+            // Função para lidar com a mudança nos selects
             function handleSelectChangeAndSave(event) {
                 const element = event.target;
                 if (element.classList.contains('status-select')) {
-                    // Remove todas as classes de status existentes e adiciona a nova
                     element.classList.remove('status-pendente', 'status-em-progresso', 'status-concluido');
                     element.classList.add(`status-${element.value}`);
                 } else if (element.classList.contains('priority-select')) {
-                    // Remove todas as classes de prioridade existentes e adiciona a nova
                     element.classList.remove('priority-alta', 'priority-media', 'priority-baixa');
                     element.classList.add(`priority-${element.value}`);
                 }
-                saveMeetingData(); // Salva os dados após a mudança e atualização da classe
+                // saveMeetingData(); // Não há mais salvamento automático em base de dados externa
             }
 
             // --- Funções de Filtro e Ordenação ---
@@ -1380,6 +1277,14 @@
 
             // Função para chamar a API Gemini para gerar resumo geral
             async function generateOverallSummary() {
+                const config = loadConfig();
+                const geminiApiKey = config.geminiApiKey;
+
+                if (!geminiApiKey) {
+                    showConfigModal('Chave da API Gemini Ausente', 'Por favor, insira a sua chave da API Gemini na configuração para usar esta funcionalidade.');
+                    return;
+                }
+
                 loadingSpinner.style.display = 'block';
                 modalBody.innerHTML = '';
                 showModal('Gerando Resumo Geral...', '<p>Por favor, aguarde...</p>');
@@ -1402,11 +1307,8 @@
                     const prompt = `Resuma todas as seguintes tarefas de ata de reunião de forma concisa e objetiva:\n\n${allTaskDescriptions}`;
                     chatHistory.push({ role: "user", parts: [{ text: prompt }] });
                     const payload = { contents: chatHistory };
-                    // INSERIR SUA CHAVE DE API AQUI:
-                    const apiKey = "AIzaSyDMhdoJKb1HJVmZ7pkm3lF_gNGHs8WohRg"; // <<-- SUBSTITUA ESTA LINHA PELA SUA CHAVE DE API REAL, SE ESTIVER EXECUTANDO LOCALMENTE
-                    // FIM DA CHAVE DE API
 
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
 
                     const response = await fetch(apiUrl, {
                         method: 'POST',
@@ -1550,9 +1452,9 @@
                     targetTaskGroup.appendChild(newTaskItem);
                 }
 
-                saveMeetingData(); // Salva após adicionar tarefa
+                saveMeetingData(); // Chama a função para "salvar" (apenas para atualizar o DOM)
                 attachListeners(); // Re-anexa os event listeners
-                addInputListeners(); // Re-anexa listeners para salvar no Firestore
+                addInputListeners(); // Re-anexa listeners
                 applyFiltersAndSort(); // Aplica filtros e ordenação após adicionar nova tarefa
             }
 
@@ -1568,7 +1470,7 @@
                     parentTaskGroup.remove();
                     renumberTaskGroups(); // Re-numera os grupos após a remoção
                 }
-                saveMeetingData(); // Salva após remover tarefa
+                saveMeetingData(); // Chama a função para "salvar" (apenas para atualizar o DOM)
                 applyFiltersAndSort(); // Aplica filtros e ordenação após remover tarefa
             }
 
@@ -1693,7 +1595,7 @@
                 descriptionInput.value = ''; // Limpa o campo
                 inlineForm.classList.add('hidden');
                 inlineForm.closest('.task-group').querySelector('.toggle-add-task-form-btn').classList.remove('hidden'); // Mostra o botão de toggle
-                saveMeetingData(); // Salva após adicionar apresentação
+                saveMeetingData(); // Chama a função para "salvar" (apenas para atualizar o DOM)
             }
 
 
