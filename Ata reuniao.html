@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ata de Reunião Moderna</title>
+    <!-- Inclui Tailwind CSS para estilização -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inclui a biblioteca html2pdf.js para exportar como PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Um cinza muito claro, quase branco, para um look mais limpo */
+            color: #334155; /* Cor de texto padrão mais suave */
+        }
+        .container {
+            max-width: 1024px; /* Aumenta ligeiramente a largura máxima para mais espaço */
+        }
+        .card {
+            background-color: #ffffff; /* Fundo branco puro para os cards */
+            border-radius: 10px; /* Cantos arredondados ligeiramente mais suaves */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); /* Sombra mais sutil e elegante */
+            border: 1px solid #e2e8f0; /* Borda sutil para definir os cards */
+        }
+        .header-gradient {
+            background: linear-gradient(to right, #1e3a8a, #1d4ed8); /* Gradiente de azul mais profundo e corporativo */
+            border-radius: 10px 10px 0 0; /* Cantos arredondados apenas no topo */
+        }
+        .section-title {
+            border-left: 4px solid #1d4ed8; /* Linha azul mais escura à esquerda do título da seção */
+            padding-left: 1rem; /* Espaçamento ajustado */
+            color: #1a202c; /* Cor de texto mais escura para títulos */
+            font-weight: 600; /* Títulos um pouco mais pesados */
+        }
+        .task-item {
+            border-bottom: 1px dashed #cbd5e0; /* Linha divisória tracejada mais discreta */
+        }
+        .task-item:last-child {
+            border-bottom: none; /* Remove a linha da última tarefa */
+        }
+        .status-badge, .priority-badge {
+            padding: 0.25rem 0.75rem; /* Ajuste de padding */
+            border-radius: 9999px; /* Formato de pílula */
+            font-size: 0.7rem; /* Fonte ligeiramente menor */
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em; /* Espaçamento entre letras sutil */
+        }
+        /* Cores dos status mais corporativas */
+        .status-pendente {
+            background-color: #fffbeb; /* Amarelo muito claro */
+            color: #b45309; /* Laranja acastanhado */
+            border: 1px solid #fcd34d;
+        }
+        .status-concluido {
+            background-color: #ecfdf5; /* Verde muito claro */
+            color: #047857; /* Verde floresta */
+            border: 1px solid #34d399;
+        }
+        .status-em-progresso {
+            background-color: #eff6ff; /* Azul muito claro */
+            color: #2563eb; /* Azul médio */
+            border: 1px solid #60a5fa;
+        }
+        /* Cores das prioridades mais corporativas */
+        .priority-alta {
+            background-color: #fef2f2; /* Vermelho muito claro */
+            color: #dc2626; /* Vermelho mais suave */
+            border: 1px solid #ef4444;
+        }
+        .priority-media {
+            background-color: #fffbeb; /* Laranja muito claro */
+            color: #d97706; /* Laranja acastanhado */
+            border: 1px solid #fcd34d;
+        }
+        .priority-baixa {
+            background-color: #f0f9ff; /* Azul muito claro */
+            color: #3b82f6; /* Azul médio */
+            border: 1px solid #93c5fd;
+        }
+        /* Estilos para o modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5); /* Fundo mais escuro para o modal */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            margin: auto;
+            padding: 25px; /* Mais padding */
+            border-radius: 10px;
+            width: 90%;
+            max-width: 650px; /* Ligeiramente maior */
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2); /* Sombra mais pronunciada */
+            position: relative;
+            text-align: left;
+        }
+        #modalBody {
+            padding: 15px;
+            background-color: #f9f9fb; /* Fundo ligeiramente diferente para a área de conteúdo do modal */
+            border-radius: 6px;
+            line-height: 1.7; /* Melhor espaçamento entre linhas */
+            font-size: 0.95rem; /* Ajusta o tamanho da fonte */
+            max-height: 450px; /* Altura máxima para conteúdo rolável */
+            overflow-y: auto;
+            color: #475569; /* Cor de texto legível */
+        }
+        .close-button {
+            color: #64748b; /* Cor mais suave para o botão de fechar */
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            transition: color 0.2s;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: #1a202c;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        /* Estilo para o spinner de carregamento */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #1d4ed8; /* Cor do spinner alinhada com o tema corporativo */
+            border-radius: 50%;
+            width: 28px; /* Ligeiramente maior */
+            height: 28px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Estilos para campos editáveis */
+        [contenteditable="true"] {
+            outline: none; /* Remove a borda tracejada padrão */
+            border-bottom: 1px dashed #cbd5e0; /* Borda inferior sutil */
+            padding: 2px 0px; /* Ajusta padding */
+            min-width: 50px;
+            transition: all 0.2s ease-in-out;
+        }
+        [contenteditable="true"]:focus {
+            border-bottom: 1px solid #1d4ed8; /* Borda sólida mais forte ao focar */
+            background-color: #f0f9ff; /* Fundo azul muito claro ao focar */
+        }
+        /* Estilo para selects e inputs de data */
+        select, input[type="date"], textarea {
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+            color: #475569;
+            transition: all 0.2s ease-in-out;
+        }
+        select:focus, input[type="date"]:focus, textarea:focus {
+            border-color: #1d4ed8;
+            box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.2);
+            outline: none;
+        }
+        button {
+            transition: all 0.2s ease-in-out;
+        }
+
+        /* Estilos específicos para impressão (PDF) */
+        @media print {
+            body {
+                background-color: #ffffff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                color: #212121;
+            }
+            .container {
+                max-width: 100% !important;
+                padding: 0 !important;
+            }
+            .card {
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                padding: 0 !important;
+            }
+            .header-gradient {
+                background: #1e3a8a !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                padding: 1rem 1.5rem !important;
+            }
+            .header-gradient h1 {
+                font-size: 2.5rem !important; /* Larger title in print */
+            }
+            .header-gradient p {
+                font-size: 1.2rem !important; /* Larger subtitle in print */
+            }
+            .section-title {
+                border-left: 4px solid #1d4ed8 !important;
+                padding-left: 1rem !important;
+                margin-bottom: 1rem !important;
+                color: #1a202c !important;
+            }
+            input[type="date"], select.status-select, select.priority-select {
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+                border: none;
+                padding: 0;
+                background: none;
+                color: inherit;
+                font-size: inherit;
+                line-height: inherit;
+                width: auto;
+                flex-grow: 0;
+            }
+            /* Ensure contenteditable elements look like plain text */
+            [contenteditable="true"] {
+                border-bottom: none !important;
+                background-color: transparent !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+            }
+            .remove-task-btn, .toggle-add-task-form-btn, .add-task-inline-form,
+            #generateOverallSummaryBtn, #saveAsHtmlBtn, #saveAsPdfBtn, .modal,
+            .filter-sort-controls, .add-task-inline-form + button { /* Added the + button for inline forms */
+                display: none !important;
+            }
+            .task-group {
+                margin-bottom: 1.5rem !important;
+                padding-left: 0.5rem;
+                /* Propriedades para controle de quebra de página */
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            .task-item {
+                padding-left: 1rem !important;
+                border-bottom: 1px dashed #cbd5e0 !important;
+                padding-top: 0.5rem !important;
+                padding-bottom: 0.5rem !important;
+                /* Propriedades para controle de quebra de página */
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            .task-item:last-child {
+                border-bottom: none !important;
+            }
+            ul.list-disc {
+                padding-left: 1.5rem !important;
+            }
+            .status-badge, .priority-badge {
+                background-color: transparent !important;
+                color: #212121 !important;
+                border: 1px solid #ccc !important;
+                padding: 0.1rem 0.5rem !important;
+            }
+            .status-pendente, .status-concluido, .status-em-progresso,
+            .priority-alta, .priority-media, .priority-baixa {
+                color: #212121 !important;
+            }
+            footer {
+                margin-top: 2rem !important;
+                color: #616161 !important;
+            }
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+    <div class="container mx-auto">
+        <!-- Cabeçalho da Ata -->
+        <header class="header-gradient text-white p-6 rounded-t-xl shadow-lg mb-6 flex flex-col sm:flex-row justify-between items-center">
+            <div class="mb-4 sm:mb-0">
+                <h1 class="text-3xl sm:text-4xl font-bold mb-2" contenteditable="true">Ata de Reunião</h1>
+                <p class="text-lg sm:text-xl font-light" contenteditable="true">25 de Junho de 2025</p>
+                <div class="text-sm mt-2 font-medium">
+                    <span class="font-semibold">ID do Utilizador: </span><span id="userIdDisplay">Carregando...</span>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+                <!-- Botão para Gerar Resumo Geral -->
+                <button id="generateOverallSummaryBtn" class="bg-white text-blue-800 hover:bg-blue-100 font-bold py-2 px-4 rounded-full text-sm shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300">Gerar Resumo Geral ✨</button>
+                <!-- Botão para Salvar como HTML -->
+                <button id="saveAsHtmlBtn" class="bg-white text-indigo-800 hover:bg-indigo-100 font-bold py-2 px-4 rounded-full text-sm shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-300">Salvar como HTML 💾</button>
+                <!-- Novo Botão para Salvar como PDF -->
+                <button id="saveAsPdfBtn" class="bg-white text-red-700 hover:bg-red-100 font-bold py-2 px-4 rounded-full text-sm shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300">Salvar como PDF 📄</button>
+            </div>
+        </header>
+
+        <!-- Detalhes da Reunião -->
+        <section class="card p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4 section-title">Detalhes da Reunião</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+                <div>
+                    <p class="font-semibold text-gray-600">Data:</p>
+                    <p contenteditable="true" id="meetingDate" class="text-gray-800">25 de Junho de 2025</p>
+                </div>
+                <div>
+                    <p class="font-semibold text-gray-600">Próxima Reunião:</p>
+                    <p contenteditable="true" id="nextMeetingDate" class="text-gray-800">30 de Julho de 2025 às 15:00</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Participantes -->
+        <section class="card p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4 section-title">Participantes</h2>
+            <ul class="list-disc list-inside text-gray-700 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2" id="participantsList">
+                <li contenteditable="true" class="text-gray-800">Richard Bilton</li>
+                <li contenteditable="true" class="text-gray-800">Joab Felipe</li>
+                <li contenteditable="true" class="text-gray-800">Alexandre Cesar</li>
+                <li contenteditable="true" class="text-gray-800">Vinicius Nascimento</li>
+                <li contenteditable="true" class="text-gray-800">Lucas Ferreira</li>
+                <li contenteditable="true" class="text-gray-800">Gabriela Maeda</li>
+                <li contenteditable="true" class="text-gray-800">Bruno Freitas</li>
+                <li contenteditable="true" class="text-gray-800">Carol Pedrosa</li>
+                <li contenteditable="true" class="text-gray-800">Renato Scalercio</li>
+                <li contenteditable="true" class="text-gray-800">Cleber Gio</li>
+                <li contenteditable="true" class="text-gray-800">Ronaldo Sousa</li>
+            </ul>
+        </section>
+
+        <!-- Tópicos e Ações -->
+        <section class="card p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4 section-title">Tópicos e Ações</h2>
+
+            <!-- Controles de Filtro e Ordenação -->
+            <div class="filter-sort-controls flex flex-wrap gap-4 mb-6 p-4 bg-gray-50 rounded-lg shadow-inner border border-gray-200">
+                <div class="flex-1 min-w-[150px]">
+                    <label for="filterStatus" class="block text-sm font-medium text-gray-700 mb-1">Filtrar por Estado:</label>
+                    <select id="filterStatus" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="all">Todos</option>
+                        <option value="pendente">Pendente</option>
+                        <option value="em-progresso">Em Progresso</option>
+                        <option value="concluido">Concluído</option>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[150px]">
+                    <label for="sortOrder" class="block text-sm font-medium text-gray-700 mb-1">Ordenar por:</label>
+                    <select id="sortOrder" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="default">Padrão</option>
+                        <option value="deadline">Prazo</option>
+                        <option value="status">Estado</option>
+                        <option value="priority">Prioridade</option>
+                        <option value="description">Descrição</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Container para as tarefas existentes e novas -->
+            <div id="tasksContainer">
+                <!-- Bruna Almeida - CIPA / ASSÉDIO -->
+                <div class="mb-6 task-group" data-responsible="Bruna Almeida - CIPA / ASSÉDIO">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800" contenteditable="true">1. Bruna Almeida - CIPA / ASSÉDIO</h3>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Esclarecidas e reiteradas as regras para o canal de denúncias, em que a Bruna explicará a qualquer interessado como formalizar uma queixa/denúncia.</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <!-- Formulário para adicionar tarefa neste grupo -->
+                    <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
+                        <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Tarefa:</h4>
+                        <textarea class="shadow-sm border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2 task-description-input-inline" rows="2" placeholder="Descrição da tarefa..."></textarea>
+                        <div class="flex flex-wrap space-x-2 mb-2">
+                            <input type="date" class="shadow-sm border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-deadline-input-inline">
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
+                                <option value="em-progresso">Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 add-task-inline-btn">Adicionar</button>
+                        <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-2 cancel-add-task-inline-btn">Cancelar</button>
+                    </div>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 toggle-add-task-form-btn mt-4">Adicionar Tarefa a este grupo +</button>
+                </div>
+
+                <!-- Lucas Ferreira - Manutenção Suprimentos e Serviços -->
+                <div class="mb-6 task-group" data-responsible="Lucas Ferreira - Manutenção Suprimentos e Serviços">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800" contenteditable="true">2. Lucas Ferreira - Manutenção Suprimentos e Serviços</h3>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Estudar a instalação do novo piso do cardio MOR/Persipisos - por R$ 60.000, 40% de entrada em 2x de 30/60. Elétrica com Matheus por R$ 7.000 reais. /// ARCHFLOOR recomendado pelo arquiteto - R$ 111K (Previsão Agosto).</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-08-25" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-alta">
+                                <option value="alta" selected>Alta</option>
+                                <option value="media">Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Revestimento externo da escada em volta do elevador da CIA 111. Orçamento completo de R$ 13K.</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Verificar orçamento para compra de plataforma elevatória (11 metros por R$ 46.900,00) e análise de um gerador usado/semi novo. /// Elevador da Cia111.</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-baixa">
+                                <option value="alta">Alta</option>
+                                <option value="media">Média</option>
+                                <option value="baixa" selected>Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Orçar a sala de prescrição da musculação. Carol cotará.</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Verificar fechadura para porta da sala de lutas e sala Zen do Morumbi.</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-baixa">
+                                <option value="alta">Alta</option>
+                                <option value="media">Média</option>
+                                <option value="baixa" selected>Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Retirar duas caixas de som da sala 5 na Cia 111 e analisar a caixa de som do running class.</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-baixa">
+                                <option value="alta">Alta</option>
+                                <option value="media">Média</option>
+                                <option value="baixa" selected>Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Finalizar trabalho de envelopamento.</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <!-- Formulário para adicionar tarefa neste grupo -->
+                    <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
+                        <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Tarefa:</h4>
+                        <textarea class="shadow-sm border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2 task-description-input-inline" rows="2" placeholder="Descrição da tarefa..."></textarea>
+                        <div class="flex flex-wrap space-x-2 mb-2">
+                            <input type="date" class="shadow-sm border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-deadline-input-inline">
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
+                                <option value="em-progresso">Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluido</option>
+                            </select>
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 add-task-inline-btn">Adicionar</button>
+                        <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-2 cancel-add-task-inline-btn">Cancelar</button>
+                    </div>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 toggle-add-task-form-btn mt-4">Adicionar Tarefa a este grupo +</button>
+                </div>
+
+                <!-- Renato - Musculação Morumbi -->
+                <div class="mb-6 task-group" data-responsible="Renato - Musculação Morumbi">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800" contenteditable="true">6. Renato - Musculação Morumbi</h3>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Colocar botão de ajuda nos equipamentos da musculação - MOR (AX SYSTEMS) Orçamento R$ 6.900,00 (6 relógios x 1150).</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-alta">
+                                <option value="alta" selected>Alta</option>
+                                <option value="media">Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Trocar as 8 bikes da musculação. Valor: 18K sem tela touch.</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluido</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <!-- Formulário para adicionar tarefa neste grupo -->
+                    <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
+                        <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Tarefa:</h4>
+                        <textarea class="shadow-sm border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2 task-description-input-inline" rows="2" placeholder="Descrição da tarefa..."></textarea>
+                        <div class="flex flex-wrap space-x-2 mb-2">
+                            <input type="date" class="shadow-sm border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-deadline-input-inline">
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
+                                <option value="em-progresso">Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 add-task-inline-btn">Adicionar</button>
+                        <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-2 cancel-add-task-inline-btn">Cancelar</button>
+                    </div>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 toggle-add-task-form-btn mt-4">Adicionar Tarefa a este grupo +</button>
+                </div>
+
+                <!-- Alexandre - TI Cia 111 -->
+                <div class="mb-6 task-group" data-responsible="Alexandre - TI Cia 111">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800" contenteditable="true">7. Alexandre - TI Cia 111</h3>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Atualização do videowall e redes sociais da Cia111 e colocar mais volume de conteúdo.</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <!-- Formulário para adicionar tarefa neste grupo -->
+                    <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
+                        <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Tarefa:</h4>
+                        <textarea class="shadow-sm border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2 task-description-input-inline" rows="2" placeholder="Descrição da tarefa..."></textarea>
+                        <div class="flex flex-wrap space-x-2 mb-2">
+                            <input type="date" class="shadow-sm border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-deadline-input-inline">
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
+                                <option value="em-progresso">Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 add-task-inline-btn">Adicionar</button>
+                        <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-2 cancel-add-task-inline-btn">Cancelar</button>
+                    </div>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 toggle-add-task-form-btn mt-4">Adicionar Tarefa a este grupo +</button>
+                </div>
+
+                <!-- Cleber - Marketing -->
+                <div class="mb-6 task-group" data-responsible="Cleber - Marketing">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800" contenteditable="true">8. Cleber - Marketing</h3>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Atualização do videowall e redes sociais da Cia111 e colocar mais volume de conteúdo.</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Fazer conteúdo de Step e Axis para adicionar no video wall. Gravar aulão de Axis em Julho. Material dos botões de ajuda no video wall.</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <!-- Formulário para adicionar tarefa neste grupo -->
+                    <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
+                        <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Tarefa:</h4>
+                        <textarea class="shadow-sm border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2 task-description-input-inline" rows="2" placeholder="Descrição da tarefa..."></textarea>
+                        <div class="flex flex-wrap space-x-2 mb-2">
+                            <input type="date" class="shadow-sm border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-deadline-input-inline">
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
+                                <option value="em-progresso">Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 add-task-inline-btn">Adicionar</button>
+                        <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-2 cancel-add-task-inline-btn">Cancelar</button>
+                    </div>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 toggle-add-task-form-btn mt-4">Adicionar Tarefa a este grupo +</button>
+                </div>
+
+                <!-- Gabriela - Vendas -->
+                <div class="mb-6 task-group" data-responsible="Gabriela - Vendas">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800" contenteditable="true">9. Gabriela - Vendas</h3>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Total: 3076 em 31/05 - Preço médio: 469,89. Meta: 4000 sendo 2300 MOR e 1700 Cia111.</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-alta">
+                                <option value="alta" selected>Alta</option>
+                                <option value="media">Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <!-- Formulário para adicionar tarefa neste grupo -->
+                    <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
+                        <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Tarefa:</h4>
+                        <textarea class="shadow-sm border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2 task-description-input-inline" rows="2" placeholder="Descrição da tarefa..."></textarea>
+                        <div class="flex flex-wrap space-x-2 mb-2">
+                            <input type="date" class="shadow-sm border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-deadline-input-inline">
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
+                                <option value="em-progresso">Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 add-task-inline-btn">Adicionar</button>
+                        <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-2 cancel-add-task-inline-btn">Cancelar</button>
+                    </div>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 toggle-add-task-form-btn mt-4">Adicionar Tarefa a este grupo +</button>
+                </div>
+
+                <!-- Carol Pedrosa - Ginástica -->
+                <div class="mb-6 task-group" data-responsible="Carol Pedrosa - Ginástica">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800" contenteditable="true">10. Carol Pedrosa - Ginástica</h3>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Testar fita de monitoramento de braço para testar no OZ.</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Verificar fechadura para sala de lutas e sala Zen do Morumbi.</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluido</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-baixa">
+                                <option value="alta">Alta</option>
+                                <option value="media">Média</option>
+                                <option value="baixa" selected>Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <!-- Formulário para adicionar tarefa neste grupo -->
+                    <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
+                        <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Tarefa:</h4>
+                        <textarea class="shadow-sm border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2 task-description-input-inline" rows="2" placeholder="Descrição da tarefa..."></textarea>
+                        <div class="flex flex-wrap space-x-2 mb-2">
+                            <input type="date" class="shadow-sm border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-deadline-input-inline">
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
+                                <option value="em-progresso">Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 add-task-inline-btn">Adicionar</button>
+                        <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-2 cancel-add-task-inline-btn">Cancelar</button>
+                    </div>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 toggle-add-task-form-btn mt-4">Adicionar Tarefa a este grupo +</button>
+                </div>
+
+                <!-- Gerentes -->
+                <div class="mb-6 task-group" data-responsible="Gerentes">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800" contenteditable="true">11. Gerentes</h3>
+                    <div class="task-item py-3">
+                        <p class="text-gray-700 task-description" contenteditable="true">Entregar férias para Setembro de 2025 até o fechamento do ponto de Julho. Tentar programar como CWB.</p>
+                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                            <label class="text-gray-600">Prazo:</label>
+                            <input type="date" value="" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                            <label class="text-gray-600">Estado:</label>
+                            <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
+                                <option value="em-progresso" selected>Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <label class="text-gray-600">Prioridade:</label>
+                            <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="flex space-x-2 mt-3">
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                        </div>
+                    </div>
+                    <!-- Formulário para adicionar tarefa neste grupo -->
+                    <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
+                        <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Tarefa:</h4>
+                        <textarea class="shadow-sm border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2 task-description-input-inline" rows="2" placeholder="Descrição da tarefa..."></textarea>
+                        <div class="flex flex-wrap space-x-2 mb-2">
+                            <input type="date" class="shadow-sm border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-deadline-input-inline">
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
+                                <option value="em-progresso">Em Progresso</option>
+                                <option value="pendente">Pendente</option>
+                                <option value="concluido">Concluído</option>
+                            </select>
+                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
+                                <option value="alta">Alta</option>
+                                <option value="media" selected>Média</option>
+                                <option value="baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 add-task-inline-btn">Adicionar</button>
+                        <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-2 cancel-add-task-inline-btn">Cancelar</button>
+                    </div>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 toggle-add-task-form-btn mt-4">Adicionar Tarefa a este grupo +</button>
+                </div>
+
+                <!-- Apresentações -->
+                <div class="mb-6 task-group" data-responsible="Apresentações">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800" contenteditable="true">12. Apresentações</h3>
+                    <ul class="list-disc list-inside text-gray-700" id="presentationsList">
+                        <li contenteditable="true" class="text-gray-800">Junho - Área técnica (musculação)</li>
+                        <li contenteditable="true" class="text-gray-800">Julho - Ginástica e lutas</li>
+                        <li contenteditable="true" class="text-gray-800">Agosto - Marketing e Platinum</li>
+                        <li contenteditable="true" class="text-gray-800">Setembro - Recepção e Vendas</li>
+                        <li contenteditable="true" class="text-gray-800">Outubro - Área técnica (musculação)</li>
+                    </ul>
+                    <!-- Formulário para adicionar item de apresentação neste grupo -->
+                    <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
+                        <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Apresentação:</h4>
+                        <textarea class="shadow-sm border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2 task-description-input-inline" rows="2" placeholder="Descrição da apresentação..."></textarea>
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 add-presentation-inline-btn">Adicionar</button>
+                        <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-2 cancel-add-task-inline-btn">Cancelar</button>
+                    </div>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 toggle-add-task-form-btn mt-4">Adicionar Apresentação +</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Rodapé -->
+        <footer class="text-center text-gray-600 text-sm mt-8">
+            <p>&copy; 2025 Companhia Athletica. Todos os direitos reservados.</p>
+            <p contenteditable="true" class="text-gray-700">Gerado em 25 de Junho de 2025</p>
+        </footer>
+    </div>
+
+    <!-- Modal para exibir o resumo/sugestões -->
+    <div id="responseModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3 id="modalTitle" class="text-xl font-bold mb-4 text-gray-800"></h3>
+            <div id="modalBody" class="text-gray-700"></div>
+            <div id="loadingSpinner" class="spinner mx-auto mt-4"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Importa as funções necessárias do Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variáveis globais do ambiente Canvas
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Inicializa o Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentUserId = null;
+        let unsubscribeSnapshot = null; // Para gerenciar a subscrição do Firestore
+
+        let currentFilter = 'all'; // 'all', 'pendente', 'em-progresso', 'concluido'
+        let currentSort = 'default'; // 'default', 'deadline', 'status', 'priority', 'description'
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const generateOverallSummaryBtn = document.getElementById('generateOverallSummaryBtn');
+            const saveAsHtmlBtn = document.getElementById('saveAsHtmlBtn');
+            const saveAsPdfBtn = document.getElementById('saveAsPdfBtn');
+            const responseModal = document.getElementById('responseModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            const closeButton = document.querySelector('.close-button');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const tasksContainer = document.getElementById('tasksContainer');
+            const userIdDisplay = document.getElementById('userIdDisplay');
+
+            const meetingTitle = document.querySelector('h1[contenteditable="true"]');
+            const meetingDate = document.getElementById('meetingDate');
+            const nextMeetingDate = document.getElementById('nextMeetingDate');
+            const participantsList = document.getElementById('participantsList');
+            const footerDate = document.querySelector('footer p[contenteditable="true"]');
+
+            const filterStatusSelect = document.getElementById('filterStatus');
+            const sortOrderSelect = document.getElementById('sortOrder');
+
+            // --- Firebase Authentication e Carregamento Inicial ---
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUserId = user.uid;
+                    userIdDisplay.textContent = currentUserId;
+                    console.log('Utilizador autenticado:', currentUserId);
+                    await loadMeetingData(currentUserId);
+                } else {
+                    console.log('Nenhum utilizador autenticado. Tentando login anónimo...');
+                    try {
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error('Erro ao autenticar:', error);
+                        userIdDisplay.textContent = 'Erro de autenticação';
+                        showModal('Erro de Autenticação', 'Não foi possível autenticar o utilizador. Por favor, tente novamente.');
+                    }
+                }
+            });
+
+            // Função para carregar dados da reunião do Firestore
+            async function loadMeetingData(userId) {
+                if (unsubscribeSnapshot) {
+                    unsubscribeSnapshot(); // Cancela a subscrição anterior se existir
+                }
+
+                const meetingDocRef = doc(db, `artifacts/${appId}/users/${userId}/meetings`, 'currentMeeting');
+                console.log('Tentando carregar dados de:', meetingDocRef.path);
+
+                unsubscribeSnapshot = onSnapshot(meetingDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        console.log('Dados da ata carregados do Firestore:', data);
+                        renderMeetingData(data);
+                        applyFiltersAndSort(); // Aplica filtros e ordenação após carregar
+                    } else {
+                        console.log('Nenhuma ata encontrada para este utilizador. Criando uma nova.');
+                        // Opcional: Popular com dados iniciais se não houver ata
+                        saveMeetingData(); // Salva a ata inicial do HTML
+                    }
+                }, (error) => {
+                    console.error('Erro ao receber updates do Firestore:', error);
+                    showModal('Erro de Sincronização', 'Ocorreu um erro ao sincronizar os dados da ata. Verifique a sua conexão ou tente recarregar.');
+                });
+            }
+
+            // Função para renderizar os dados da reunião na UI
+            function renderMeetingData(data) {
+                meetingTitle.textContent = data.title || 'Ata de Reunião';
+                meetingDate.textContent = data.date || '25 de Junho de 2025';
+                nextMeetingDate.textContent = data.nextMeeting || '30 de Julho de 2025 às 15:00';
+
+                // Limpa a lista de participantes e adiciona os novos
+                participantsList.innerHTML = '';
+                if (data.participants && Array.isArray(data.participants)) {
+                    data.participants.forEach(p => {
+                        const li = document.createElement('li');
+                        li.contentEditable = true;
+                        li.textContent = p;
+                        li.classList.add('text-gray-800'); // Adiciona classe para cor de texto
+                        participantsList.appendChild(li);
+                    });
+                }
+
+                // Limpa o container de tarefas e adiciona os novos grupos/tarefas
+                tasksContainer.innerHTML = '';
+                if (data.taskGroups && Array.isArray(data.taskGroups)) {
+                    data.taskGroups.forEach(groupData => {
+                        const groupDiv = document.createElement('div');
+                        groupDiv.classList.add('mb-6', 'task-group');
+                        groupDiv.setAttribute('data-responsible', groupData.responsible);
+
+                        const h3 = document.createElement('h3');
+                        h3.classList.add('text-xl', 'font-bold', 'mb-2', 'text-gray-800');
+                        h3.contentEditable = true;
+                        h3.textContent = groupData.title;
+                        groupDiv.appendChild(h3);
+
+                        if (groupData.isPresentationList) {
+                            const ul = document.createElement('ul');
+                            ul.classList.add('list-disc', 'list-inside', 'text-gray-700');
+                            ul.id = 'presentationsList'; // Manter o ID para o grupo de apresentações
+                            groupData.tasks.forEach(task => {
+                                const li = document.createElement('li');
+                                li.contentEditable = true;
+                                li.textContent = task.description;
+                                li.classList.add('text-gray-800'); // Adiciona classe para cor de texto
+                                ul.appendChild(li);
+                            });
+                            groupDiv.appendChild(ul);
+                        } else {
+                            groupData.tasks.forEach(taskData => {
+                                const taskItem = document.createElement('div');
+                                taskItem.classList.add('task-item', 'py-3');
+                                taskItem.innerHTML = `
+                                    <p class="text-gray-700 task-description" contenteditable="true">${taskData.description}</p>
+                                    <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                                        <label class="text-gray-600">Prazo:</label>
+                                        <input type="date" value="${taskData.deadline || ''}" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                                        <label class="text-gray-600">Estado:</label>
+                                        <select class="status-select border rounded px-2 py-1 text-sm status-${taskData.status}">
+                                            <option value="em-progresso" ${taskData.status === 'em-progresso' ? 'selected' : ''}>Em Progresso</option>
+                                            <option value="pendente" ${taskData.status === 'pendente' ? 'selected' : ''}>Pendente</option>
+                                            <option value="concluido" ${taskData.status === 'concluido' ? 'selected' : ''}>Concluído</option>
+                                        </select>
+                                        <label class="text-gray-600">Prioridade:</label>
+                                        <select class="priority-select border rounded px-2 py-1 text-sm priority-${taskData.priority || 'media'}">
+                                            <option value="alta" ${taskData.priority === 'alta' ? 'selected' : ''}>Alta</option>
+                                            <option value="media" ${taskData.priority === 'media' ? 'selected' : ''}>Média</option>
+                                            <option value="baixa" ${taskData.priority === 'baixa' ? 'selected' : ''}>Baixa</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex space-x-2 mt-3">
+                                        <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                                    </div>
+                                `;
+                                groupDiv.appendChild(taskItem);
+                            });
+                        }
+
+                        // Adiciona o formulário inline de adição de tarefas ao grupo
+                        const inlineFormHtml = `
+                            <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
+                                <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Tarefa:</h4>
+                                <textarea class="shadow-sm border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2 task-description-input-inline" rows="2" placeholder="Descrição da tarefa..."></textarea>
+                                <div class="flex flex-wrap space-x-2 mb-2">
+                                    <input type="date" class="shadow-sm border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-deadline-input-inline">
+                                    <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
+                                        <option value="em-progresso">Em Progresso</option>
+                                        <option value="pendente">Pendente</option>
+                                        <option value="concluido">Concluído</option>
+                                    </select>
+                                    <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
+                                        <option value="alta">Alta</option>
+                                        <option value="media" selected>Média</option>
+                                        <option value="baixa">Baixa</option>
+                                    </select>
+                                </div>
+                                <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 add-task-inline-btn">Adicionar</button>
+                                <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-2 cancel-add-task-inline-btn">Cancelar</button>
+                            </div>
+                            <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 toggle-add-task-form-btn mt-4">Adicionar Tarefa a este grupo +</button>
+                        `;
+                        groupDiv.insertAdjacentHTML('beforeend', inlineFormHtml);
+                        tasksContainer.appendChild(groupDiv);
+                    });
+                }
+                renumberTaskGroups(); // Re-numera após carregar
+                attachListeners(); // Re-anexa listeners após renderizar
+                addInputListeners(); // Adiciona listeners para salvar no Firestore
+            }
+
+            // Função para salvar os dados da reunião no Firestore
+            async function saveMeetingData() {
+                if (!currentUserId) {
+                    console.warn('Não há utilizador autenticado para salvar os dados.');
+                    return;
+                }
+
+                const dataToSave = {
+                    title: meetingTitle.textContent.trim(),
+                    date: meetingDate.textContent.trim(),
+                    nextMeeting: nextMeetingDate.textContent.trim(),
+                    participants: Array.from(participantsList.children).map(li => li.textContent.trim()),
+                    taskGroups: [],
+                    lastUpdated: new Date()
+                };
+
+                const taskGroups = document.querySelectorAll('.task-group');
+                taskGroups.forEach(groupDiv => {
+                    const groupTitle = groupDiv.querySelector('h3').textContent.trim();
+                    const responsible = groupDiv.dataset.responsible;
+                    const isPresentationList = groupDiv.querySelector('#presentationsList') !== null;
+
+                    const tasks = [];
+                    if (isPresentationList) {
+                        Array.from(groupDiv.querySelectorAll('#presentationsList li')).forEach(li => {
+                            tasks.push({ description: li.textContent.trim() });
+                        });
+                    } else {
+                        Array.from(groupDiv.querySelectorAll('.task-item')).forEach(taskItem => {
+                            const description = taskItem.querySelector('.task-description').textContent.trim();
+                            const deadline = taskItem.querySelector('input[type="date"]').value;
+                            const status = taskItem.querySelector('.status-select').value;
+                            const priority = taskItem.querySelector('.priority-select').value;
+                            tasks.push({ description, deadline, status, priority });
+                        });
+                    }
+
+                    dataToSave.taskGroups.push({
+                        title: groupTitle,
+                        responsible: responsible,
+                        isPresentationList: isPresentationList,
+                        tasks: tasks
+                    });
+                });
+
+                const meetingDocRef = doc(db, `artifacts/${appId}/users/${currentUserId}/meetings`, 'currentMeeting');
+                try {
+                    await setDoc(meetingDocRef, dataToSave, { merge: true });
+                    console.log('Ata salva no Firestore com sucesso!');
+                } catch (error) {
+                    console.error('Erro ao salvar ata no Firestore:', error);
+                    showModal('Erro ao Salvar', 'Não foi possível salvar a ata. Por favor, verifique a sua conexão.');
+                }
+            }
+
+            // Adiciona listeners para salvar automaticamente quando o conteúdo editável muda
+            function addInputListeners() {
+                document.querySelectorAll('[contenteditable="true"]').forEach(element => {
+                    element.removeEventListener('input', saveMeetingData); // Evita duplicação
+                    element.addEventListener('input', saveMeetingData);
+                });
+                document.querySelectorAll('input[type="date"]').forEach(element => {
+                    element.removeEventListener('change', saveMeetingData); // Evita duplicação
+                    element.addEventListener('change', saveMeetingData);
+                });
+                document.querySelectorAll('.status-select, .priority-select').forEach(element => {
+                    element.removeEventListener('change', handleSelectChangeAndSave); // Evita duplicação
+                    element.addEventListener('change', handleSelectChangeAndSave);
+                    // Aplica a classe de status/prioridade inicial ao carregar
+                    if (element.classList.contains('status-select')) {
+                        // Remove todas as classes de status existentes e adiciona a nova
+                        element.classList.remove('status-pendente', 'status-em-progresso', 'status-concluido');
+                        element.classList.add(`status-${element.value}`);
+                    } else if (element.classList.contains('priority-select')) {
+                        // Remove todas as classes de prioridade existentes e adiciona a nova
+                        element.classList.remove('priority-alta', 'priority-media', 'priority-baixa');
+                        element.classList.add(`priority-${element.value}`);
+                    }
+                });
+            }
+
+            // Nova função para lidar com a mudança nos selects e salvar
+            function handleSelectChangeAndSave(event) {
+                const element = event.target;
+                if (element.classList.contains('status-select')) {
+                    // Remove todas as classes de status existentes e adiciona a nova
+                    element.classList.remove('status-pendente', 'status-em-progresso', 'status-concluido');
+                    element.classList.add(`status-${element.value}`);
+                } else if (element.classList.contains('priority-select')) {
+                    // Remove todas as classes de prioridade existentes e adiciona a nova
+                    element.classList.remove('priority-alta', 'priority-media', 'priority-baixa');
+                    element.classList.add(`priority-${element.value}`);
+                }
+                saveMeetingData(); // Salva os dados após a mudança e atualização da classe
+            }
+
+            // --- Funções de Filtro e Ordenação ---
+            function applyFiltersAndSort() {
+                const taskGroups = document.querySelectorAll('.task-group');
+
+                taskGroups.forEach(groupDiv => {
+                    if (groupDiv.querySelector('#presentationsList')) {
+                        // Não aplica filtro/ordenação para a lista de apresentações
+                        return;
+                    }
+
+                    const taskItems = Array.from(groupDiv.querySelectorAll('.task-item'));
+
+                    // 1. Filtrar
+                    taskItems.forEach(taskItem => {
+                        const status = taskItem.querySelector('.status-select').value;
+                        if (currentFilter === 'all' || status === currentFilter) {
+                            taskItem.style.display = ''; // Mostra
+                        } else {
+                            taskItem.style.display = 'none'; // Esconde
+                        }
+                    });
+
+                    // 2. Coletar e Ordenar (apenas os visíveis)
+                    const visibleTaskItems = taskItems.filter(item => item.style.display !== 'none');
+
+                    visibleTaskItems.sort((a, b) => {
+                        if (currentSort === 'deadline') {
+                            const dateA = new Date(a.querySelector('input[type="date"]').value);
+                            const dateB = new Date(b.querySelector('input[type="date"]').value);
+                            return dateA - dateB;
+                        } else if (currentSort === 'status') {
+                            const statusOrder = { 'pendente': 1, 'em-progresso': 2, 'concluido': 3 };
+                            const statusA = statusOrder[a.querySelector('.status-select').value];
+                            const statusB = statusOrder[b.querySelector('.status-select').value];
+                            return statusA - statusB;
+                        } else if (currentSort === 'priority') {
+                            const priorityOrder = { 'alta': 1, 'media': 2, 'baixa': 3 };
+                            const priorityA = priorityOrder[a.querySelector('.priority-select').value];
+                            const priorityB = priorityOrder[b.querySelector('.priority-select').value];
+                            return priorityA - priorityB;
+                        } else if (currentSort === 'description') {
+                            const descA = a.querySelector('.task-description').textContent.toLowerCase();
+                            const descB = b.querySelector('.task-description').textContent.toLowerCase();
+                            return descA.localeCompare(descB);
+                        }
+                        return 0; // Padrão, sem alteração na ordem
+                    });
+
+                    // 3. Re-apendar os itens ordenados
+                    const inlineFormDiv = groupDiv.querySelector('.add-task-inline-form');
+                    visibleTaskItems.forEach(item => {
+                        if (inlineFormDiv) {
+                            groupDiv.insertBefore(item, inlineFormDiv);
+                        } else {
+                            groupDiv.appendChild(item);
+                        }
+                    });
+                });
+            }
+
+            // Event listeners para os controles de filtro e ordenação
+            filterStatusSelect.addEventListener('change', (event) => {
+                currentFilter = event.target.value;
+                applyFiltersAndSort();
+            });
+
+            sortOrderSelect.addEventListener('change', (event) => {
+                currentSort = event.target.value;
+                applyFiltersAndSort();
+            });
+
+
+            // Função para formatar a data de AAAA-MM-DD para DD/MM/AAAA
+            function formatDateToDDMMYYYY(dateString) {
+                if (!dateString) return '';
+                const [year, month, day] = dateString.split('-');
+                return `${day}/${month}/${year}`;
+            }
+
+            // Função para formatar a data de DD/MM/AAAA para AAAA-MM-DD
+            function formatDateToYYYYMMDD(dateString) {
+                if (!dateString) return '';
+                const [day, month, year] = dateString.split('/');
+                return `${year}-${month}-${day}`;
+            }
+
+            // Função para exibir o modal
+            function showModal(title, content) {
+                modalTitle.textContent = title;
+                modalBody.innerHTML = content;
+                responseModal.style.display = 'flex';
+            }
+
+            // Função para esconder o modal
+            function hideModal() {
+                responseModal.style.display = 'none';
+                modalTitle.textContent = '';
+                modalBody.innerHTML = '';
+            }
+
+            // Event listener para fechar o modal
+            closeButton.addEventListener('click', hideModal);
+            window.addEventListener('click', (event) => {
+                if (event.target == responseModal) {
+                    hideModal();
+                }
+            });
+
+            // Função para chamar a API Gemini para gerar resumo geral
+            async function generateOverallSummary() {
+                loadingSpinner.style.display = 'block';
+                modalBody.innerHTML = '';
+                showModal('Gerando Resumo Geral...', '<p>Por favor, aguarde...</p>');
+
+                try {
+                    const allTaskDescriptions = Array.from(document.querySelectorAll('.task-description'))
+                                                    .map(element => element.textContent.trim())
+                                                    .filter(text => text && !text.startsWith("Nenhuma tarefa específica mencionada na ata original para"))
+                                                    .join('\n\n');
+
+                    console.log('Descrições de tarefas coletadas:', allTaskDescriptions);
+
+                    if (!allTaskDescriptions.trim()) {
+                        showModal('Atenção', 'Não há tarefas para resumir.');
+                        loadingSpinner.style.display = 'none';
+                        return;
+                    }
+
+                    let chatHistory = [];
+                    const prompt = `Resuma todas as seguintes tarefas de ata de reunião de forma concisa e objetiva:\n\n${allTaskDescriptions}`;
+                    chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                    const payload = { contents: chatHistory };
+                    // INSERIR SUA CHAVE DE API AQUI:
+                    const apiKey = "AIzaSyDMhdoJKb1HJVmZ7pkm3lF_gNGHs8WohRg"; // <<-- SUBSTITUA ESTA LINHA PELA SUA CHAVE DE API REAL, SE ESTIVER EXECUTANDO LOCALMENTE
+                    // FIM DA CHAVE DE API
+
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    console.log('Resposta bruta do fetch:', response);
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Erro na resposta da API:', response.status, response.statusText, errorText);
+                        showModal('Erro', `Falha na API: ${response.status} ${response.statusText}. Detalhes: ${errorText}`);
+                        loadingSpinner.style.display = 'none';
+                        return;
+                    }
+
+                    const result = await response.json();
+                    console.log('Resposta JSON da API:', result);
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        showModal('Resumo Geral da Ata', text);
+                    } else {
+                        showModal('Erro', 'Não foi possível gerar o resumo geral. A resposta da API estava vazia ou em um formato inesperado.');
+                    }
+                } catch (error) {
+                    console.error('Erro ao chamar a API Gemini para resumo geral:', error);
+                    showModal('Erro', 'Ocorreu um erro ao processar sua solicitação de resumo geral. Verifique o console para mais detalhes.');
+                } finally {
+                    loadingSpinner.style.display = 'none';
+                }
+            }
+
+            // Função para adicionar uma nova tarefa a um grupo de responsável
+            function appendTaskToResponsibleGroup(responsible, description, deadline, status, priority) {
+                const newTaskItem = document.createElement('div');
+                newTaskItem.classList.add('task-item', 'py-3');
+                newTaskItem.innerHTML = `
+                    <p class="text-gray-700 task-description" contenteditable="true">${description}</p>
+                    <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                        <label class="text-gray-600">Prazo:</label>
+                        <input type="date" value="${deadline || ''}" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                        <label class="text-gray-600">Estado:</label>
+                        <select class="status-select border rounded px-2 py-1 text-sm status-${status}">
+                            <option value="em-progresso" ${status === 'em-progresso' ? 'selected' : ''}>Em Progresso</option>
+                            <option value="pendente" ${status === 'pendente' ? 'selected' : ''}>Pendente</option>
+                            <option value="concluido" ${status === 'concluido' ? 'selected' : ''}>Concluído</option>
+                        </select>
+                        <label class="text-gray-600">Prioridade:</label>
+                        <select class="priority-select border rounded px-2 py-1 text-sm priority-${priority || 'media'}">
+                            <option value="alta" ${priority === 'alta' ? 'selected' : ''}>Alta</option>
+                            <option value="media" ${priority === 'media' ? 'selected' : ''}>Média</option>
+                            <option value="baixa" ${priority === 'baixa' ? 'selected' : ''}>Baixa</option>
+                        </select>
+                    </div>
+                    <div class="flex space-x-2 mt-3">
+                        <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                    </div>
+                `;
+
+                let targetTaskGroup = document.querySelector(`.task-group[data-responsible="${responsible}"]`);
+
+                // Se o grupo do responsável não existir, cria um novo
+                if (!targetTaskGroup) {
+                    targetTaskGroup = document.createElement('div');
+                    targetTaskGroup.classList.add('mb-6', 'task-group');
+                    targetTaskGroup.setAttribute('data-responsible', responsible);
+
+                    let maxNumber = 0;
+                    const existingTaskGroups = tasksContainer.querySelectorAll('.task-group h3');
+                    existingTaskGroups.forEach(h3 => {
+                        const match = h3.textContent.match(/^(\d+)\./);
+                        if (match && parseInt(match[1]) > maxNumber) {
+                            maxNumber = parseInt(match[1]);
+                        }
+                    });
+                    const newGroupNumber = maxNumber + 1;
+
+                    const newGroupTitle = document.createElement('h3');
+                    newGroupTitle.classList.add('text-xl', 'font-bold', 'mb-2', 'text-gray-800');
+                    newGroupTitle.setAttribute('contenteditable', 'true');
+                    newGroupTitle.textContent = `${newGroupNumber}. ${responsible}`;
+                    targetTaskGroup.appendChild(newGroupTitle);
+
+                    // Adiciona o formulário inline de adição de tarefas ao novo grupo
+                    const inlineFormHtml = `
+                        <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
+                            <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Tarefa:</h4>
+                            <textarea class="shadow-sm border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2 task-description-input-inline" rows="2" placeholder="Descrição da tarefa..."></textarea>
+                            <div class="flex flex-wrap space-x-2 mb-2">
+                                <input type="date" class="shadow-sm border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-deadline-input-inline">
+                                <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
+                                    <option value="em-progresso">Em Progresso</option>
+                                    <option value="pendente">Pendente</option>
+                                    <option value="concluido">Concluído</option>
+                                </select>
+                                <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
+                                    <option value="alta">Alta</option>
+                                    <option value="media" selected>Média</option>
+                                    <option value="baixa">Baixa</option>
+                                </select>
+                            </div>
+                            <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 add-task-inline-btn">Adicionar</button>
+                            <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-2 cancel-add-task-inline-btn">Cancelar</button>
+                        </div>
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 toggle-add-task-form-btn mt-4">Adicionar Tarefa a este grupo +</button>
+                    `;
+                    targetTaskGroup.insertAdjacentHTML('beforeend', inlineFormHtml);
+
+
+                    // Encontra a posição correta para inserir o novo grupo para manter a ordem numérica
+                    let inserted = false;
+                    const allGroups = Array.from(tasksContainer.querySelectorAll('.task-group'));
+                    for (let i = 0; i < allGroups.length; i++) {
+                        const groupNumMatch = allGroups[i].querySelector('h3').textContent.match(/^(\d+)\./);
+                        const groupNumber = groupNumMatch ? parseInt(groupNumMatch[1]) : 0;
+                        if (newGroupNumber < groupNumber) {
+                            tasksContainer.insertBefore(targetTaskGroup, allGroups[i]);
+                            inserted = true;
+                            break;
+                        }
+                    }
+                    if (!inserted) {
+                        tasksContainer.appendChild(targetTaskGroup);
+                    }
+
+                    // Re-numera todos os grupos após a inserção
+                    renumberTaskGroups();
+
+                }
+
+                // Adiciona a nova tarefa ao grupo do responsável
+                // Insere antes do formulário inline, se ele existir
+                const inlineFormDiv = targetTaskGroup.querySelector('.add-task-inline-form');
+                if (inlineFormDiv) {
+                    targetTaskGroup.insertBefore(newTaskItem, inlineFormDiv);
+                } else {
+                    targetTaskGroup.appendChild(newTaskItem);
+                }
+
+                saveMeetingData(); // Salva após adicionar tarefa
+                attachListeners(); // Re-anexa os event listeners
+                addInputListeners(); // Re-anexa listeners para salvar no Firestore
+                applyFiltersAndSort(); // Aplica filtros e ordenação após adicionar nova tarefa
+            }
+
+
+            // Função para remover tarefa
+            function removeTask(event) {
+                const taskItemToRemove = event.target.closest('.task-item');
+                const parentTaskGroup = taskItemToRemove.closest('.task-group');
+                taskItemToRemove.remove();
+
+                // Se o grupo de tarefas ficar vazio (e não for o grupo de Apresentações que tem UL), remove o cabeçalho do grupo também
+                if (parentTaskGroup && parentTaskGroup.querySelectorAll('.task-item').length === 0 && parentTaskGroup.querySelectorAll('ul').length === 0) {
+                    parentTaskGroup.remove();
+                    renumberTaskGroups(); // Re-numera os grupos após a remoção
+                }
+                saveMeetingData(); // Salva após remover tarefa
+                applyFiltersAndSort(); // Aplica filtros e ordenação após remover tarefa
+            }
+
+            // Função para re-numerar os grupos de tarefas
+            function renumberTaskGroups() {
+                const taskGroups = tasksContainer.querySelectorAll('.task-group');
+                let currentNumber = 1;
+                taskGroups.forEach(group => {
+                    const h3 = group.querySelector('h3');
+                    if (h3) {
+                        const originalText = h3.textContent.replace(/^\d+\.\s*/, ''); // Remove o número antigo
+                        h3.textContent = `${currentNumber}. ${originalText}`;
+                        currentNumber++;
+                    }
+                });
+            }
+
+
+            // Função para anexar event listeners para todos os botões dinâmicos
+            function attachListeners() {
+                // Remover
+                const currentRemoveButtons = document.querySelectorAll('.remove-task-btn');
+                currentRemoveButtons.forEach(button => {
+                    button.removeEventListener('click', removeTask); // Evita duplicação
+                    button.addEventListener('click', removeTask);
+                });
+
+                // Toggle formulário inline de adicionar tarefa
+                const toggleFormsButtons = document.querySelectorAll('.toggle-add-task-form-btn');
+                toggleFormsButtons.forEach(button => {
+                    button.removeEventListener('click', toggleInlineForm);
+                    button.addEventListener('click', toggleInlineForm);
+                });
+
+                // Adicionar tarefa inline
+                const addInlineButtons = document.querySelectorAll('.add-task-inline-btn');
+                addInlineButtons.forEach(button => {
+                    button.removeEventListener('click', addInlineTask);
+                    button.addEventListener('click', addInlineTask);
+                });
+
+                // Cancelar adição de tarefa inline
+                const cancelInlineButtons = document.querySelectorAll('.cancel-add-task-inline-btn');
+                cancelInlineButtons.forEach(button => {
+                    button.removeEventListener('click', cancelInlineTask);
+                    button.addEventListener('click', cancelInlineTask);
+                });
+
+                // Apresentações: Adicionar item de lista
+                const addPresentationInlineButtons = document.querySelectorAll('.add-presentation-inline-btn');
+                addPresentationInlineButtons.forEach(button => {
+                    button.removeEventListener('click', addInlinePresentation);
+                    button.addEventListener('click', addInlinePresentation);
+                });
+            }
+
+            // Função para alternar a visibilidade do formulário inline
+            function toggleInlineForm(event) {
+                const taskGroup = event.target.closest('.task-group');
+                const inlineForm = taskGroup.querySelector('.add-task-inline-form');
+                inlineForm.classList.toggle('hidden');
+                event.target.classList.toggle('hidden'); // Esconde o botão de toggle
+            }
+
+            // Função para adicionar tarefa a partir do formulário inline
+            function addInlineTask(event) {
+                const inlineForm = event.target.closest('.add-task-inline-form');
+                const taskGroup = inlineForm.closest('.task-group');
+                const descriptionInput = inlineForm.querySelector('.task-description-input-inline');
+                const deadlineInput = inlineForm.querySelector('.task-deadline-input-inline');
+                const statusInput = inlineForm.querySelector('.task-status-input-inline');
+                const priorityInput = inlineForm.querySelector('.task-priority-input-inline');
+
+
+                const description = descriptionInput.value.trim();
+                const deadline = deadlineInput.value;
+                const status = statusInput.value;
+                const priority = priorityInput.value;
+                const responsible = taskGroup.dataset.responsible; // Pega o responsável do data-attribute
+
+                if (description === "") {
+                    showModal('Erro', 'A descrição da tarefa não pode estar vazia.');
+                    return;
+                }
+
+                appendTaskToResponsibleGroup(responsible, description, deadline, status, priority);
+
+                // Limpa e esconde o formulário
+                descriptionInput.value = '';
+                deadlineInput.value = '';
+                statusInput.value = 'em-progresso';
+                priorityInput.value = 'media';
+                inlineForm.classList.add('hidden');
+                taskGroup.querySelector('.toggle-add-task-form-btn').classList.remove('hidden'); // Mostra o botão de toggle
+            }
+
+            // Função para cancelar a adição de tarefa inline
+            function cancelInlineTask(event) {
+                const inlineForm = event.target.closest('.add-task-inline-form');
+                const taskGroup = inlineForm.closest('.task-group');
+                inlineForm.classList.add('hidden');
+                taskGroup.querySelector('.toggle-add-task-form-btn').classList.remove('hidden'); // Mostra o botão de toggle
+            }
+
+            // Função para adicionar item de apresentação inline
+            function addInlinePresentation(event) {
+                const inlineForm = event.target.closest('.add-task-inline-form');
+                const presentationsList = inlineForm.closest('.task-group').querySelector('#presentationsList');
+                const descriptionInput = inlineForm.querySelector('.task-description-input-inline');
+                const description = descriptionInput.value.trim();
+
+                if (description === "") {
+                    showModal('Erro', 'A descrição da apresentação não pode estar vazia.');
+                    return;
+                }
+
+                const newLi = document.createElement('li');
+                newLi.setAttribute('contenteditable', 'true');
+                newLi.textContent = description;
+                presentationsList.appendChild(newLi);
+
+                descriptionInput.value = ''; // Limpa o campo
+                inlineForm.classList.add('hidden');
+                inlineForm.closest('.task-group').querySelector('.toggle-add-task-form-btn').classList.remove('hidden'); // Mostra o botão de toggle
+                saveMeetingData(); // Salva após adicionar apresentação
+            }
+
+
+            // Função para salvar o HTML editado
+            saveAsHtmlBtn.addEventListener('click', () => {
+                // Esconde elementos interativos antes de salvar
+                const elementsToHide = document.querySelectorAll('.remove-task-btn, .toggle-add-task-form-btn, .add-task-inline-form, .filter-sort-controls, .add-task-inline-form + button');
+                elementsToHide.forEach(el => el.style.display = 'none');
+
+                const htmlContent = document.documentElement.outerHTML;
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'ata_de_reuniao_editada.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                // Restaura a visibilidade dos elementos
+                elementsToHide.forEach(el => el.style.display = '');
+            });
+
+            // Função para salvar como PDF
+            saveAsPdfBtn.addEventListener('click', () => {
+                // Esconde elementos interativos antes de gerar o PDF
+                const elementsToHide = document.querySelectorAll('.remove-task-btn, .toggle-add-task-form-btn, .add-task-inline-form, #generateOverallSummaryBtn, #saveAsHtmlBtn, #saveAsPdfBtn, .filter-sort-controls, .add-task-inline-form + button');
+                elementsToHide.forEach(el => el.style.display = 'none');
+
+                // Armazena os inputs de data originais para restaurá-los depois
+                const dateInputs = document.querySelectorAll('input[type="date"]');
+                const originalDateInputMap = new Map(); // Mapa para armazenar o input original e seu pai/próximo irmão
+
+                dateInputs.forEach((input, index) => {
+                    const formattedDate = formatDateToDDMMYYYY(input.value);
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = formattedDate;
+                    textSpan.classList.add('pdf-date-placeholder'); // Adiciona uma classe para identificar facilmente esses spans mais tarde
+                    textSpan.style.display = 'inline-block'; // Mantém o layout
+
+                    // Armazena o input original e seu contexto para restauração
+                    originalDateInputMap.set(textSpan, { originalInput: input, parent: input.parentNode, nextSibling: input.nextSibling });
+
+                    // Substitui o input pelo span
+                    input.parentNode.replaceChild(textSpan, input);
+                });
+
+                const element = document.body; // Ou o elemento que você quer exportar
+
+                html2pdf(element, {
+                    margin: 10,
+                    filename: 'ata_de_reuniao.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, logging: true, dpi: 192, letterRendering: true },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                }).then(() => {
+                    // Restaura os inputs de data originais
+                    originalDateInputMap.forEach((originalData, textSpan) => {
+                        const { originalInput, parent, nextSibling } = originalData;
+                        if (parent) {
+                            if (nextSibling) {
+                                parent.insertBefore(originalInput, nextSibling);
+                            } else {
+                                parent.appendChild(originalInput);
+                            }
+                            textSpan.remove(); // Remove o span temporário
+                        }
+                    });
+
+                    // Restaura a visibilidade dos outros elementos
+                    elementsToHide.forEach(el => el.style.display = '');
+                });
+            });
+
+
+            // Inicializa os event listeners para os botões existentes na carga da página
+            attachListeners();
+
+            // Adiciona event listener para o botão de resumo geral
+            generateOverallSummaryBtn.addEventListener('click', generateOverallSummary);
+        });
+    </script>
+</body>
+</html>
