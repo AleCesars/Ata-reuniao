@@ -763,7 +763,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluido</option>
+                                <option value="concluido">Concluído</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
@@ -1055,6 +1055,7 @@
         let currentUserId = null; // ID do utilizador gerado localmente, sem persistência
 
         const LOCAL_STORAGE_CONFIG_KEY = 'ataMeetingAppConfig'; // Usado para guardar a chave Gemini
+        const LOCAL_STORAGE_DATA_KEY = 'ataMeetingData'; // Nova chave para os dados da ata
 
         // Elements for config modal
         const configModal = document.getElementById('configModal');
@@ -1090,6 +1091,8 @@
 
             const filterStatusSelect = document.getElementById('filterStatus');
             const sortOrderSelect = document.getElementById('sortOrder');
+
+            let saveTimeout; // Variável para o debounce
 
             // Initial call to set up app logic (no Firebase init)
             initAppLogic();
@@ -1128,9 +1131,11 @@
 
             function resetConfig() {
                 localStorage.removeItem(LOCAL_STORAGE_CONFIG_KEY);
+                localStorage.removeItem(LOCAL_STORAGE_DATA_KEY); // Limpa também os dados da ata
                 geminiApiKeyInput.value = '';
-                console.log('Configuração redefinida.');
-                initAppLogic(); // Re-initialize app logic to reflect the reset
+                console.log('Configuração e dados redefinidos.');
+                // Recarrega a página para aplicar o reset completo
+                window.location.reload();
             }
 
             saveConfigBtn.addEventListener('click', () => {
@@ -1162,21 +1167,233 @@
                     console.log('ID do Utilizador gerado para a sessão:', currentUserId);
                 }
 
-                // Since Firebase is removed, data loading is no longer from Firestore.
-                // The initial data is already in the HTML.
+                // Load saved data when the app initializes
+                loadMeetingData();
+
                 // We just need to ensure listeners are attached and filters applied.
                 attachListeners();
                 addInputListeners();
                 applyFiltersAndSort();
             }
 
-            // Função para salvar os dados da reunião (apenas para HTML/PDF export)
-            // Não há mais salvamento automático em base de dados externa.
+            // Função para salvar os dados da reunião no localStorage
             function saveMeetingData() {
-                // Esta função agora apenas simula o "salvar" para que os listeners não falhem.
-                // Os dados são manipulados no DOM diretamente.
-                console.log('Dados atualizados no DOM. Para persistência, use as opções de exportar HTML/PDF.');
+                clearTimeout(saveTimeout); // Limpa qualquer timeout anterior
+                saveTimeout = setTimeout(() => {
+                    try {
+                        const meetingData = {
+                            meetingTitle: meetingTitle.textContent.trim(),
+                            meetingDate: meetingDate.textContent.trim(),
+                            nextMeetingDate: nextMeetingDate.textContent.trim(),
+                            participants: Array.from(participantsList.children).map(li => li.textContent.trim()),
+                            taskGroups: [],
+                            presentations: []
+                        };
+
+                        // Coleta os grupos de tarefas
+                        document.querySelectorAll('.task-group').forEach(groupDiv => {
+                            const responsibleElement = groupDiv.querySelector('h3');
+                            const responsible = responsibleElement ? responsibleElement.textContent.trim().replace(/^\d+\.\s*/, '') : '';
+
+                            // Verifica se é um grupo de apresentações
+                            if (groupDiv.querySelector('#presentationsList')) {
+                                meetingData.presentations = Array.from(groupDiv.querySelectorAll('#presentationsList li')).map(li => li.textContent.trim());
+                            } else {
+                                const tasks = [];
+                                groupDiv.querySelectorAll('.task-item').forEach(taskItem => {
+                                    const description = taskItem.querySelector('.task-description').textContent.trim();
+                                    const deadline = taskItem.querySelector('input[type="date"]').value;
+                                    const status = taskItem.querySelector('.status-select').value;
+                                    const priority = taskItem.querySelector('.priority-select').value;
+                                    tasks.push({ description, deadline, status, priority });
+                                });
+                                if (responsible && tasks.length > 0) { // Só adiciona se tiver responsável e tarefas
+                                    meetingData.taskGroups.push({ responsible, tasks });
+                                }
+                            }
+                        });
+
+                        localStorage.setItem(LOCAL_STORAGE_DATA_KEY, JSON.stringify(meetingData));
+                        console.log('Dados da reunião salvos automaticamente no localStorage.');
+                    } catch (e) {
+                        console.error('Erro ao salvar dados no localStorage:', e);
+                    }
+                }, 1000); // Salva após 1 segundo de inatividade
             }
+
+            // Função para carregar os dados da reunião do localStorage
+            function loadMeetingData() {
+                try {
+                    const savedData = localStorage.getItem(LOCAL_STORAGE_DATA_KEY);
+                    if (savedData) {
+                        const meetingData = JSON.parse(savedData);
+
+                        // Popula os detalhes da reunião
+                        meetingTitle.textContent = meetingData.meetingTitle || 'Ata de Reunião';
+                        meetingDate.textContent = meetingData.meetingDate || '25 de Junho de 2025';
+                        nextMeetingDate.textContent = meetingData.nextMeetingDate || '30 de Julho de 2025 às 15:00';
+
+                        // Popula os participantes
+                        participantsList.innerHTML = '';
+                        if (meetingData.participants && meetingData.participants.length > 0) {
+                            meetingData.participants.forEach(participant => {
+                                const li = document.createElement('li');
+                                li.contentEditable = true;
+                                li.textContent = participant;
+                                participantsList.appendChild(li);
+                            });
+                        } else {
+                            // Se não houver participantes salvos, restaura os padrões ou deixa vazio
+                            ['Richard Bilton', 'Joab Felipe', 'Alexandre Cesar', 'Vinicius Nascimento', 'Lucas Ferreira', 'Gabriela Maeda', 'Bruno Freitas', 'Carol Pedrosa', 'Renato Scalercio', 'Cleber Gio', 'Ronaldo Sousa'].forEach(p => {
+                                const li = document.createElement('li');
+                                li.contentEditable = true;
+                                li.textContent = p;
+                                participantsList.appendChild(li);
+                            });
+                        }
+
+
+                        // Limpa o container de tarefas antes de recarregar
+                        tasksContainer.innerHTML = '';
+
+                        // Popula os grupos de tarefas
+                        if (meetingData.taskGroups && meetingData.taskGroups.length > 0) {
+                            meetingData.taskGroups.forEach(group => {
+                                const groupDiv = document.createElement('div');
+                                groupDiv.classList.add('mb-6', 'task-group');
+                                groupDiv.setAttribute('data-responsible', group.responsible);
+
+                                const h3 = document.createElement('h3');
+                                h3.classList.add('text-xl', 'font-bold', 'mb-2', 'text-gray-800');
+                                h3.contentEditable = true;
+                                h3.textContent = `${group.responsible}`; // O número será adicionado por renumberTaskGroups
+                                groupDiv.appendChild(h3);
+
+                                group.tasks.forEach(task => {
+                                    const taskItem = document.createElement('div');
+                                    taskItem.classList.add('task-item', 'py-3');
+                                    taskItem.innerHTML = `
+                                        <p class="text-gray-700 task-description" contenteditable="true">${task.description}</p>
+                                        <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
+                                            <label class="text-gray-600">Prazo:</label>
+                                            <input type="date" value="${task.deadline || ''}" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
+                                            <label class="text-gray-600">Estado:</label>
+                                            <select class="status-select border rounded px-2 py-1 text-sm status-${task.status}">
+                                                <option value="em-progresso" ${task.status === 'em-progresso' ? 'selected' : ''}>Em Progresso</option>
+                                                <option value="pendente" ${task.status === 'pendente' ? 'selected' : ''}>Pendente</option>
+                                                <option value="concluido" ${task.status === 'concluido' ? 'selected' : ''}>Concluído</option>
+                                            </select>
+                                            <label class="text-gray-600">Prioridade:</label>
+                                            <select class="priority-select border rounded px-2 py-1 text-sm priority-${task.priority || 'media'}">
+                                                <option value="alta" ${task.priority === 'alta' ? 'selected' : ''}>Alta</option>
+                                                <option value="media" ${task.priority === 'media' ? 'selected' : ''}>Média</option>
+                                                <option value="baixa" ${task.priority === 'baixa' ? 'selected' : ''}>Baixa</option>
+                                            </select>
+                                        </div>
+                                        <div class="flex space-x-2 mt-3">
+                                            <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300 remove-task-btn">Remover 🗑️</button>
+                                        </div>
+                                    `;
+                                    groupDiv.appendChild(taskItem);
+                                });
+
+                                // Adiciona o formulário inline de adição de tarefas
+                                const inlineFormHtml = `
+                                    <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
+                                        <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Tarefa:</h4>
+                                        <textarea class="shadow-sm border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2 task-description-input-inline" rows="2" placeholder="Descrição da tarefa..."></textarea>
+                                        <div class="flex flex-wrap space-x-2 mb-2">
+                                            <input type="date" class="shadow-sm border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-deadline-input-inline">
+                                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
+                                                <option value="em-progresso">Em Progresso</option>
+                                                <option value="pendente">Pendente</option>
+                                                <option value="concluido">Concluído</option>
+                                            </select>
+                                            <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
+                                                <option value="alta">Alta</option>
+                                                <option value="media" selected>Média</option>
+                                                <option value="baixa">Baixa</option>
+                                            </select>
+                                        </div>
+                                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 add-task-inline-btn">Adicionar</button>
+                                        <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-2 cancel-add-task-inline-btn">Cancelar</button>
+                                    </div>
+                                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 toggle-add-task-form-btn mt-4">Adicionar Tarefa a este grupo +</button>
+                                `;
+                                groupDiv.insertAdjacentHTML('beforeend', inlineFormHtml);
+                                tasksContainer.appendChild(groupDiv);
+                            });
+                        }
+
+                        // Popula as apresentações (se existirem e se o grupo de apresentações não tiver sido criado pelas taskGroups)
+                        const presentationsGroup = document.querySelector('.task-group[data-responsible="Apresentações"]');
+                        if (meetingData.presentations && meetingData.presentations.length > 0) {
+                            if (!presentationsGroup) {
+                                // Se o grupo de apresentações não existe, cria um novo
+                                const newPresentationsGroupDiv = document.createElement('div');
+                                newPresentationsGroupDiv.classList.add('mb-6', 'task-group');
+                                newPresentationsGroupDiv.setAttribute('data-responsible', 'Apresentações');
+
+                                const h3 = document.createElement('h3');
+                                h3.classList.add('text-xl', 'font-bold', 'mb-2', 'text-gray-800');
+                                h3.contentEditable = true;
+                                h3.textContent = `Apresentações`;
+                                newPresentationsGroupDiv.appendChild(h3);
+
+                                const ul = document.createElement('ul');
+                                ul.classList.add('list-disc', 'list-inside', 'text-gray-700');
+                                ul.id = 'presentationsList';
+                                newPresentationsGroupDiv.appendChild(ul);
+
+                                const inlineFormHtml = `
+                                    <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
+                                        <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Apresentação:</h4>
+                                        <textarea class="shadow-sm border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-2 task-description-input-inline" rows="2" placeholder="Descrição da apresentação..."></textarea>
+                                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 add-presentation-inline-btn">Adicionar</button>
+                                        <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-2 cancel-add-task-inline-btn">Cancelar</button>
+                                    </div>
+                                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 toggle-add-task-form-btn mt-4">Adicionar Apresentação +</button>
+                                `;
+                                newPresentationsGroupDiv.insertAdjacentHTML('beforeend', inlineFormHtml);
+                                tasksContainer.appendChild(newPresentationsGroupDiv);
+                            }
+
+                            const targetPresentationsList = document.querySelector('#presentationsList');
+                            targetPresentationsList.innerHTML = ''; // Limpa a lista existente
+                            meetingData.presentations.forEach(presentation => {
+                                const li = document.createElement('li');
+                                li.contentEditable = true;
+                                li.textContent = presentation;
+                                targetPresentationsList.appendChild(li);
+                            });
+                        }
+
+
+                        renumberTaskGroups(); // Re-numera os grupos após o carregamento
+                        addInputListeners(); // Re-anexa os listeners aos novos elementos
+                        attachListeners(); // Re-anexa listeners para botões de ação
+                        applyFiltersAndSort(); // Aplica filtros e ordenação
+                        console.log('Dados da reunião carregados do localStorage.');
+                    } else {
+                        console.log('Nenhum dado salvo encontrado no localStorage. Carregando dados padrão do HTML.');
+                        // Se não houver dados salvos, os dados iniciais do HTML serão usados.
+                        // Certifica-se de que os listeners e classes de status/prioridade sejam aplicados.
+                        renumberTaskGroups();
+                        addInputListeners();
+                        attachListeners();
+                        applyFiltersAndSort();
+                    }
+                } catch (e) {
+                    console.error('Erro ao carregar dados do localStorage:', e);
+                    console.log('Tentando carregar dados padrão do HTML devido a erro no localStorage.');
+                    // Em caso de erro, garante que a página ainda funcione com os dados padrão.
+                    renumberTaskGroups();
+                    addInputListeners();
+                    attachListeners();
+                    applyFiltersAndSort();
+                }
+            }
+
 
             // Adiciona listeners para quando o conteúdo editável muda
             function addInputListeners() {
@@ -1214,7 +1431,7 @@
                     element.classList.remove('priority-alta', 'priority-media', 'priority-baixa');
                     element.classList.add(`priority-${element.value}`);
                 }
-                // saveMeetingData(); // Não há mais salvamento automático em base de dados externa
+                saveMeetingData(); // Chama a função para salvar no localStorage
             }
 
             // --- Funções de Filtro e Ordenação ---
@@ -1281,11 +1498,13 @@
             filterStatusSelect.addEventListener('change', (event) => {
                 currentFilter = event.target.value;
                 applyFiltersAndSort();
+                saveMeetingData(); // Salva após mudança de filtro/ordenação
             });
 
             sortOrderSelect.addEventListener('change', (event) => {
                 currentSort = event.target.value;
                 applyFiltersAndSort();
+                saveMeetingData(); // Salva após mudança de filtro/ordenação
             });
 
 
@@ -1502,7 +1721,7 @@
                     targetTaskGroup.appendChild(newTaskItem);
                 }
 
-                saveMeetingData(); // Chama a função para "salvar" (apenas para atualizar o DOM)
+                saveMeetingData(); // Chama a função para salvar no localStorage
                 attachListeners(); // Re-anexa os event listeners
                 addInputListeners(); // Re-anexa listeners
                 applyFiltersAndSort(); // Aplica filtros e ordenação após adicionar nova tarefa
@@ -1520,7 +1739,7 @@
                     parentTaskGroup.remove();
                     renumberTaskGroups(); // Re-numera os grupos após a remoção
                 }
-                saveMeetingData(); // Chama a função para "salvar" (apenas para atualizar o DOM)
+                saveMeetingData(); // Chama a função para salvar no localStorage
                 applyFiltersAndSort(); // Aplica filtros e ordenação após remover tarefa
             }
 
@@ -1530,10 +1749,13 @@
                 let currentNumber = 1;
                 taskGroups.forEach(group => {
                     const h3 = group.querySelector('h3');
-                    if (h3) {
+                    // Ignora o grupo de apresentações ao re-numerar, pois ele não tem um número
+                    if (h3 && group.dataset.responsible !== "Apresentações") {
                         const originalText = h3.textContent.replace(/^\d+\.\s*/, ''); // Remove o número antigo
                         h3.textContent = `${currentNumber}. ${originalText}`;
                         currentNumber++;
+                    } else if (h3 && group.dataset.responsible === "Apresentações") {
+                        h3.textContent = `Apresentações`; // Garante que o título "Apresentações" não seja numerado
                     }
                 });
             }
@@ -1645,7 +1867,7 @@
                 descriptionInput.value = ''; // Limpa o campo
                 inlineForm.classList.add('hidden');
                 inlineForm.closest('.task-group').querySelector('.toggle-add-task-form-btn').classList.remove('hidden'); // Mostra o botão de toggle
-                saveMeetingData(); // Chama a função para "salvar" (apenas para atualizar o DOM)
+                saveMeetingData(); // Chama a função para salvar no localStorage
             }
 
 
