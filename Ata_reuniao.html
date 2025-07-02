@@ -9,6 +9,56 @@
     <!-- Inclui a biblioteca html2pdf.js para exportar como PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js"; // Removido, pois não é usado diretamente no JS principal
+
+        // Variáveis globais do ambiente Canvas
+        // Estas variáveis são fornecidas pelo ambiente de execução.
+        // Se estiver executando fora do ambiente Canvas, elas serão indefinidas.
+        window.firebaseAppId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
+        // Prioriza a configuração do Firebase fornecida pelo ambiente Canvas
+        // Se __firebase_config não estiver definida, usa a configuração hardcoded como fallback.
+        window.firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+          apiKey: "AIzaSyCIpIaQahDGpEZ8jy7GDc_RxDGdv60uMvQ",
+          authDomain: "atareuniao.firebaseapp.com",
+          projectId: "atareuniao",
+          storageBucket: "atareuniao.firebasestorage.app",
+          messagingSenderId: "953103743555",
+          appId: "1:953103743555:web:12735fdbae9100fb0b72f6",
+          measurementId: "G-39N9GZSR2H"
+        };
+        window.initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Inicializa o Firebase
+        // Verifica se a configuração do Firebase tem uma chave de API válida
+        if (window.firebaseConfig && window.firebaseConfig.apiKey) {
+            window.firebaseApp = initializeApp(window.firebaseConfig);
+            window.db = getFirestore(window.firebaseApp);
+            window.auth = getAuth(window.firebaseApp);
+            // const analytics = getAnalytics(window.firebaseApp); // Removido, pois não é usado diretamente no JS principal
+
+            // Expose Firebase functions globally for easier access in the main script block
+            // This is a workaround for the module script not directly exposing imports to window
+            window.signInAnonymously = signInAnonymously;
+            window.signInWithCustomToken = signInWithCustomToken;
+            window.onAuthStateChanged = onAuthStateChanged;
+            window.doc = doc;
+            window.setDoc = setDoc;
+            window.onSnapshot = onSnapshot;
+
+            console.log("Firebase inicializado.");
+            console.log("Configuração do Firebase em uso (Project ID):", window.firebaseConfig.projectId); // Adicionado para depuração
+        } else {
+            console.warn("Firebase config não encontrada ou não atualizada. O aplicativo funcionará sem persistência em nuvem.");
+        }
+    </script>
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -329,7 +379,7 @@
                     <h1 class="text-3xl sm:text-4xl font-bold mb-2" contenteditable="true">Ata de Reunião</h1>
                     <p class="text-lg sm:text-xl font-light" contenteditable="true">25 de Junho de 2025</p>
                     <div class="text-sm mt-2 font-medium">
-                        <span class="font-semibold">ID do Utilizador: </span><span id="userIdDisplay">Gerando ID...</span>
+                        <span class="font-semibold">ID do Utilizador: </span><span id="userIdDisplay">Aguardando autenticação...</span>
                     </div>
                 </div>
             </div>
@@ -439,7 +489,7 @@
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
                                 <option value="em-progresso">Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
                                 <option value="alta">Alta</option>
@@ -487,7 +537,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
@@ -509,7 +559,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-baixa">
@@ -531,7 +581,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
@@ -553,7 +603,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-baixa">
@@ -575,7 +625,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-baixa">
@@ -597,7 +647,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
@@ -689,7 +739,7 @@
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
                                 <option value="em-progresso">Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
                                 <option value="alta">Alta</option>
@@ -737,7 +787,7 @@
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
                                 <option value="em-progresso">Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
                                 <option value="alta">Alta</option>
@@ -807,7 +857,7 @@
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
                                 <option value="em-progresso">Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
                                 <option value="alta">Alta</option>
@@ -855,7 +905,7 @@
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
                                 <option value="em-progresso">Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
                                 <option value="alta">Alta</option>
@@ -903,7 +953,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-baixa">
@@ -951,7 +1001,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
@@ -982,7 +1032,7 @@
                             </select>
                         </div>
                         <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 add-task-inline-btn">Adicionar</button>
-                        <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 ml-2 cancel-add-task-inline-btn">Cancelar</button>
+                        <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300">Cancelar</button>
                     </div>
                     <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 toggle-add-task-form-btn mt-4">Adicionar Tarefa a este grupo +</button>
                 </div>
@@ -1011,7 +1061,7 @@
 
         <!-- Rodapé -->
         <footer class="text-center text-gray-600 text-sm mt-8">
-            <p>&copy; 2025 ImpulsoAdm. Todos os direitos reservados.</p>
+            <p>&copy; 2025 Companhia Athletica. Todos os direitos reservados.</p>
             <p contenteditable="true" class="text-gray-700">Gerado em 25 de Junho de 2025</p>
         </footer>
     </div>
@@ -1039,31 +1089,31 @@
             </div>
             <div class="flex justify-end space-x-3">
                 <button id="saveConfigBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full text-sm shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300">Guardar Configuração</button>
-                <button id="resetConfigBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-sm shadow-md transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300">Redefinir</button>
+                <button id="resetConfigBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-full text-xs shadow-sm transition duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300">Redefinir</button>
             </div>
         </div>
     </div>
 
     <script type="module">
-        // Não há imports do Firebase SDK, pois o Firebase foi removido.
+        // Importa as funções do Firebase que foram expostas globalmente no script acima
+        const db = window.db;
+        const auth = window.auth;
+        const firebaseAppId = window.firebaseAppId;
+        const firebaseConfig = window.firebaseConfig;
+        const initialAuthToken = window.initialAuthToken;
 
-        // Variáveis globais do ambiente Canvas (não usadas, mas mantidas como null para compatibilidade)
-        const canvasAppId = null;
-        const canvasFirebaseConfig = null;
-        const canvasInitialAuthToken = null;
-
-        let currentUserId = null; // ID do utilizador gerado localmente, sem persistência
+        let currentUserId = null; // ID do utilizador autenticado pelo Firebase
+        let isAuthReady = false; // Flag para indicar que a autenticação está pronta
 
         const LOCAL_STORAGE_CONFIG_KEY = 'ataMeetingAppConfig'; // Usado para guardar a chave Gemini
-        const LOCAL_STORAGE_DATA_KEY = 'ataMeetingData'; // Nova chave para os dados da ata
+        // A chave LOCAL_STORAGE_DATA_KEY foi removida, pois os dados da ata serão salvos no Firestore.
+        const FIRESTORE_DOC_ID = 'main_agenda'; // ID fixo para o documento da ata no Firestore
 
         // Elements for config modal
         const configModal = document.getElementById('configModal');
         const closeConfigModalBtn = document.getElementById('closeConfigModal');
         const saveConfigBtn = document.getElementById('saveConfigBtn');
         const resetConfigBtn = document.getElementById('resetConfigBtn');
-
-        // Apenas input para a chave Gemini, inputs Firebase removidos
         const geminiApiKeyInput = document.getElementById('geminiApiKey');
 
 
@@ -1085,7 +1135,6 @@
             const participantsList = document.getElementById('participantsList');
             const footerDate = document.querySelector('footer p[contenteditable="true"]');
 
-            // Declarations for currentFilter and currentSort
             let currentFilter = 'all'; // 'all', 'pendente', 'em-progresso', 'concluido'
             let currentSort = 'default'; // 'default', 'deadline', 'status', 'priority', 'description'
 
@@ -1094,13 +1143,10 @@
 
             let saveTimeout; // Variável para o debounce
 
-            // Initial call to set up app logic (no Firebase init)
-            initAppLogic();
-
             // --- Config Modal Functions ---
             function showConfigModal(title, message) {
                 document.getElementById('configModalTitle').textContent = title;
-                document.getElementById('configModalBody').querySelector('p').textContent = message; // Update message
+                document.getElementById('configModalBody').querySelector('p').textContent = message;
                 const config = loadConfig();
                 geminiApiKeyInput.value = config.geminiApiKey || '';
                 configModal.style.display = 'flex';
@@ -1131,9 +1177,9 @@
 
             function resetConfig() {
                 localStorage.removeItem(LOCAL_STORAGE_CONFIG_KEY);
-                localStorage.removeItem(LOCAL_STORAGE_DATA_KEY); // Limpa também os dados da ata
+                // Não remove dados do Firestore, apenas a chave da API local
                 geminiApiKeyInput.value = '';
-                console.log('Configuração e dados redefinidos.');
+                console.log('Configuração redefinida (chave API Gemini).');
                 // Recarrega a página para aplicar o reset completo
                 window.location.reload();
             }
@@ -1151,7 +1197,7 @@
             closeConfigModalBtn.addEventListener('click', hideConfigModal);
             resetConfigBtn.addEventListener('click', resetConfig);
 
-            // --- App Logic (without Firebase) ---
+            // --- App Logic (with Firebase) ---
             async function initAppLogic() {
                 const config = loadConfig();
                 const geminiKey = config.geminiApiKey;
@@ -1160,26 +1206,84 @@
                     showConfigModal('Configuração Necessária', 'Por favor, insira a sua chave da API Gemini para usar a funcionalidade de resumo.');
                 }
 
-                // Generate a random user ID for this session (no persistence)
-                if (!currentUserId) {
-                    currentUserId = crypto.randomUUID(); // Generates a unique ID
-                    userIdDisplay.textContent = currentUserId;
-                    console.log('ID do Utilizador gerado para a sessão:', currentUserId);
+                // Verifica se o Firebase Auth foi inicializado e se a configuração não é a padrão
+                if (auth && firebaseConfig && firebaseConfig.apiKey) { // Condição atualizada
+                    console.log("Tentando autenticar Firebase..."); // Adicionado para depuração
+                    console.log("initialAuthToken:", initialAuthToken); // Adicionado para depuração
+
+                    window.onAuthStateChanged(auth, async (user) => { // Use onAuthStateChanged from window
+                        if (user) {
+                            currentUserId = user.uid;
+                            userIdDisplay.textContent = currentUserId;
+                            isAuthReady = true;
+                            console.log('Utilizador autenticado:', currentUserId);
+                            loadMeetingDataFromFirestore(); // Carrega os dados após a autenticação
+                        } else {
+                            // Tenta autenticar se não houver usuário logado
+                            try {
+                                if (initialAuthToken) {
+                                    console.log('Tentando autenticação com token personalizado...');
+                                    await window.signInWithCustomToken(auth, initialAuthToken); // Use signInWithCustomToken from window
+                                    console.log('Autenticação com token personalizado bem-sucedida.');
+                                } else {
+                                    console.log('Tentando autenticação anônima (sem token personalizado)...');
+                                    await window.signInAnonymously(auth); // Use signInAnonymously from window
+                                    console.log('Autenticação anônima bem-sucedida.');
+                                }
+                            } catch (error) {
+                                console.error('Erro na autenticação Firebase:', error);
+                                // Se o token personalizado falhar, tente a autenticação anônima como fallback
+                                if (initialAuthToken && (error.code === 'auth/custom-token-mismatch' || error.code === 'auth/invalid-custom-token' || error.code === 'auth/configuration-not-found')) {
+                                    console.warn('Falha no token personalizado. Tentando autenticação anônima como fallback...');
+                                    try {
+                                        await window.signInAnonymously(auth);
+                                        console.log('Autenticação anônima de fallback bem-sucedida.');
+                                    } catch (anonError) {
+                                        console.error('Erro na autenticação anônima de fallback:', anonError);
+                                        userIdDisplay.textContent = 'Erro de Autenticação';
+                                        isAuthReady = true;
+                                        loadDefaultMeetingData();
+                                    }
+                                } else {
+                                    userIdDisplay.textContent = 'Erro de Autenticação';
+                                    isAuthReady = true; // Permite que a UI carregue mesmo sem autenticação completa
+                                    // Carrega dados padrão se a autenticação falhar
+                                    loadDefaultMeetingData();
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    console.warn("Firebase Auth não está disponível ou a configuração não foi atualizada. O aplicativo funcionará sem persistência em nuvem.");
+                    userIdDisplay.textContent = 'Sem Firebase';
+                    isAuthReady = true;
+                    loadDefaultMeetingData(); // Carrega dados padrão se Firebase não estiver disponível
                 }
 
-                // Load saved data when the app initializes
-                loadMeetingData();
-
-                // We just need to ensure listeners are attached and filters applied.
                 attachListeners();
                 addInputListeners();
                 applyFiltersAndSort();
             }
 
-            // Função para salvar os dados da reunião no localStorage
-            function saveMeetingData() {
+            // Função para carregar dados padrão do HTML se o Firebase não estiver disponível/falhar
+            function loadDefaultMeetingData() {
+                console.log('Carregando dados padrão do HTML.');
+                // Apenas re-aplica os listeners e re-numera, pois o HTML já tem o conteúdo padrão
+                renumberTaskGroups();
+                addInputListeners();
+                attachListeners();
+                applyFiltersAndSort();
+            }
+
+            // Função para salvar os dados da reunião no Firestore
+            async function saveMeetingDataToFirestore() {
+                if (!isAuthReady || !currentUserId || !db || !firebaseAppId || !firebaseConfig.apiKey) { // Condição atualizada
+                    console.warn("Não foi possível salvar os dados: Autenticação não pronta, Firebase não disponível ou configuração não atualizada.");
+                    return;
+                }
+
                 clearTimeout(saveTimeout); // Limpa qualquer timeout anterior
-                saveTimeout = setTimeout(() => {
+                saveTimeout = setTimeout(async () => {
                     try {
                         const meetingData = {
                             meetingTitle: meetingTitle.textContent.trim(),
@@ -1190,12 +1294,11 @@
                             presentations: []
                         };
 
-                        // Coleta os grupos de tarefas
                         document.querySelectorAll('.task-group').forEach(groupDiv => {
                             const responsibleElement = groupDiv.querySelector('h3');
+                            // Remove o número e o ponto do título para obter apenas o nome do responsável
                             const responsible = responsibleElement ? responsibleElement.textContent.trim().replace(/^\d+\.\s*/, '') : '';
 
-                            // Verifica se é um grupo de apresentações
                             if (groupDiv.querySelector('#presentationsList')) {
                                 meetingData.presentations = Array.from(groupDiv.querySelectorAll('#presentationsList li')).map(li => li.textContent.trim());
                             } else {
@@ -1207,26 +1310,36 @@
                                     const priority = taskItem.querySelector('.priority-select').value;
                                     tasks.push({ description, deadline, status, priority });
                                 });
-                                if (responsible && tasks.length > 0) { // Só adiciona se tiver responsável e tarefas
+                                if (responsible && tasks.length > 0) {
                                     meetingData.taskGroups.push({ responsible, tasks });
                                 }
                             }
                         });
 
-                        localStorage.setItem(LOCAL_STORAGE_DATA_KEY, JSON.stringify(meetingData));
-                        console.log('Dados da reunião salvos automaticamente no localStorage.');
+                        const docRef = window.doc(db, 'artifacts', firebaseAppId, 'users', currentUserId, 'meeting_data', FIRESTORE_DOC_ID);
+                        await window.setDoc(docRef, meetingData, { merge: true }); // Usa merge para não sobrescrever o documento inteiro
+                        console.log('Dados da reunião salvos no Firestore.');
                     } catch (e) {
-                        console.error('Erro ao salvar dados no localStorage:', e);
+                        console.error('Erro ao salvar dados no Firestore:', e);
                     }
                 }, 1000); // Salva após 1 segundo de inatividade
             }
 
-            // Função para carregar os dados da reunião do localStorage
-            function loadMeetingData() {
-                try {
-                    const savedData = localStorage.getItem(LOCAL_STORAGE_DATA_KEY);
-                    if (savedData) {
-                        const meetingData = JSON.parse(savedData);
+            // Função para carregar os dados da reunião do Firestore
+            function loadMeetingDataFromFirestore() {
+                if (!isAuthReady || !currentUserId || !db || !firebaseAppId || !firebaseConfig.apiKey) { // Condição atualizada
+                    console.warn("Não foi possível carregar os dados: Autenticação não pronta, Firebase não disponível ou configuração não atualizada.");
+                    loadDefaultMeetingData(); // Carrega dados padrão se não puder carregar do Firestore
+                    return;
+                }
+
+                const docRef = window.doc(db, 'artifacts', firebaseAppId, 'users', currentUserId, 'meeting_data', FIRESTORE_DOC_ID);
+
+                // Usa onSnapshot para atualizações em tempo real
+                window.onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const meetingData = docSnap.data();
+                        console.log('Dados da reunião carregados do Firestore:', meetingData);
 
                         // Popula os detalhes da reunião
                         meetingTitle.textContent = meetingData.meetingTitle || 'Ata de Reunião';
@@ -1243,7 +1356,7 @@
                                 participantsList.appendChild(li);
                             });
                         } else {
-                            // Se não houver participantes salvos, restaura os padrões ou deixa vazio
+                             // Se não houver participantes salvos, restaura os padrões
                             ['Richard Bilton', 'Joab Felipe', 'Alexandre Cesar', 'Vinicius Nascimento', 'Lucas Ferreira', 'Gabriela Maeda', 'Bruno Freitas', 'Carol Pedrosa', 'Renato Scalercio', 'Cleber Gio', 'Ronaldo Sousa'].forEach(p => {
                                 const li = document.createElement('li');
                                 li.contentEditable = true;
@@ -1251,7 +1364,6 @@
                                 participantsList.appendChild(li);
                             });
                         }
-
 
                         // Limpa o container de tarefas antes de recarregar
                         tasksContainer.innerHTML = '';
@@ -1266,7 +1378,7 @@
                                 const h3 = document.createElement('h3');
                                 h3.classList.add('text-xl', 'font-bold', 'mb-2', 'text-gray-800');
                                 h3.contentEditable = true;
-                                h3.textContent = `${group.responsible}`; // O número será adicionado por renumberTaskGroups
+                                h3.textContent = `${group.responsible}`;
                                 groupDiv.appendChild(h3);
 
                                 group.tasks.forEach(task => {
@@ -1297,7 +1409,6 @@
                                     groupDiv.appendChild(taskItem);
                                 });
 
-                                // Adiciona o formulário inline de adição de tarefas
                                 const inlineFormHtml = `
                                     <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
                                         <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Tarefa:</h4>
@@ -1307,7 +1418,7 @@
                                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
                                                 <option value="em-progresso">Em Progresso</option>
                                                 <option value="pendente">Pendente</option>
-                                                <option value="concluido">Concluído</option>
+                                                <option value="concluido">Concluido</option>
                                             </select>
                                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
                                                 <option value="alta">Alta</option>
@@ -1325,11 +1436,9 @@
                             });
                         }
 
-                        // Popula as apresentações (se existirem e se o grupo de apresentações não tiver sido criado pelas taskGroups)
                         const presentationsGroup = document.querySelector('.task-group[data-responsible="Apresentações"]');
                         if (meetingData.presentations && meetingData.presentations.length > 0) {
                             if (!presentationsGroup) {
-                                // Se o grupo de apresentações não existe, cria um novo
                                 const newPresentationsGroupDiv = document.createElement('div');
                                 newPresentationsGroupDiv.classList.add('mb-6', 'task-group');
                                 newPresentationsGroupDiv.setAttribute('data-responsible', 'Apresentações');
@@ -1359,7 +1468,7 @@
                             }
 
                             const targetPresentationsList = document.querySelector('#presentationsList');
-                            targetPresentationsList.innerHTML = ''; // Limpa a lista existente
+                            targetPresentationsList.innerHTML = '';
                             meetingData.presentations.forEach(presentation => {
                                 const li = document.createElement('li');
                                 li.contentEditable = true;
@@ -1368,53 +1477,41 @@
                             });
                         }
 
-
-                        renumberTaskGroups(); // Re-numera os grupos após o carregamento
-                        addInputListeners(); // Re-anexa os listeners aos novos elementos
-                        attachListeners(); // Re-anexa listeners para botões de ação
-                        applyFiltersAndSort(); // Aplica filtros e ordenação
-                        console.log('Dados da reunião carregados do localStorage.');
-                    } else {
-                        console.log('Nenhum dado salvo encontrado no localStorage. Carregando dados padrão do HTML.');
-                        // Se não houver dados salvos, os dados iniciais do HTML serão usados.
-                        // Certifica-se de que os listeners e classes de status/prioridade sejam aplicados.
                         renumberTaskGroups();
                         addInputListeners();
                         attachListeners();
                         applyFiltersAndSort();
+                    } else {
+                        console.log("Nenhum dado encontrado no Firestore para este utilizador. Carregando dados padrão do HTML.");
+                        loadDefaultMeetingData();
+                        // Salva os dados padrão no Firestore para iniciar a persistência
+                        saveMeetingDataToFirestore();
                     }
-                } catch (e) {
-                    console.error('Erro ao carregar dados do localStorage:', e);
-                    console.log('Tentando carregar dados padrão do HTML devido a erro no localStorage.');
-                    // Em caso de erro, garante que a página ainda funcione com os dados padrão.
-                    renumberTaskGroups();
-                    addInputListeners();
-                    attachListeners();
-                    applyFiltersAndSort();
-                }
+                }, (error) => {
+                    console.error("Erro ao ouvir dados do Firestore:", error);
+                    showModal('Erro de Sincronização', 'Ocorreu um erro ao carregar os dados da ata. Verifique sua conexão ou as permissões do Firebase.');
+                    loadDefaultMeetingData(); // Carrega dados padrão em caso de erro na escuta
+                });
             }
 
 
             // Adiciona listeners para quando o conteúdo editável muda
             function addInputListeners() {
                 document.querySelectorAll('[contenteditable="true"]').forEach(element => {
-                    element.removeEventListener('input', saveMeetingData); // Evita duplicação
-                    element.addEventListener('input', saveMeetingData);
+                    element.removeEventListener('input', saveMeetingDataToFirestore);
+                    element.addEventListener('input', saveMeetingDataToFirestore);
                 });
                 document.querySelectorAll('input[type="date"]').forEach(element => {
-                    element.removeEventListener('change', saveMeetingData); // Evita duplicação
-                    element.addEventListener('change', saveMeetingData);
+                    element.removeEventListener('change', saveMeetingDataToFirestore);
+                    element.addEventListener('change', saveMeetingDataToFirestore);
                 });
                 document.querySelectorAll('.status-select, .priority-select').forEach(element => {
-                    element.removeEventListener('change', handleSelectChangeAndSave); // Evita duplicação
+                    element.removeEventListener('change', handleSelectChangeAndSave);
                     element.addEventListener('change', handleSelectChangeAndSave);
-                    // Aplica a classe de status/prioridade inicial ao carregar
                     if (element.classList.contains('status-select')) {
-                        // Remove todas as classes de status existentes e adiciona a nova
                         element.classList.remove('status-pendente', 'status-em-progresso', 'status-concluido');
                         element.classList.add(`status-${element.value}`);
                     } else if (element.classList.contains('priority-select')) {
-                        // Remove todas as classes de prioridade existentes e adiciona a nova
                         element.classList.remove('priority-alta', 'priority-media', 'priority-baixa');
                         element.classList.add(`priority-${element.value}`);
                     }
@@ -1431,7 +1528,7 @@
                     element.classList.remove('priority-alta', 'priority-media', 'priority-baixa');
                     element.classList.add(`priority-${element.value}`);
                 }
-                saveMeetingData(); // Chama a função para salvar no localStorage
+                saveMeetingDataToFirestore();
             }
 
             // --- Funções de Filtro e Ordenação ---
@@ -1440,23 +1537,20 @@
 
                 taskGroups.forEach(groupDiv => {
                     if (groupDiv.querySelector('#presentationsList')) {
-                        // Não aplica filtro/ordenação para a lista de apresentações
                         return;
                     }
 
                     const taskItems = Array.from(groupDiv.querySelectorAll('.task-item'));
 
-                    // 1. Filtrar
                     taskItems.forEach(taskItem => {
                         const status = taskItem.querySelector('.status-select').value;
                         if (currentFilter === 'all' || status === currentFilter) {
-                            taskItem.style.display = ''; // Mostra
+                            taskItem.style.display = '';
                         } else {
-                            taskItem.style.display = 'none'; // Esconde
+                            taskItem.style.display = 'none';
                         }
                     });
 
-                    // 2. Coletar e Ordenar (apenas os visíveis)
                     const visibleTaskItems = taskItems.filter(item => item.style.display !== 'none');
 
                     visibleTaskItems.sort((a, b) => {
@@ -1479,10 +1573,9 @@
                             const descB = b.querySelector('.task-description').textContent.toLowerCase();
                             return descA.localeCompare(descB);
                         }
-                        return 0; // Padrão, sem alteração na ordem
+                        return 0;
                     });
 
-                    // 3. Re-apendar os itens ordenados
                     const inlineFormDiv = groupDiv.querySelector('.add-task-inline-form');
                     visibleTaskItems.forEach(item => {
                         if (inlineFormDiv) {
@@ -1494,49 +1587,43 @@
                 });
             }
 
-            // Event listeners para os controles de filtro e ordenação
             filterStatusSelect.addEventListener('change', (event) => {
                 currentFilter = event.target.value;
                 applyFiltersAndSort();
-                saveMeetingData(); // Salva após mudança de filtro/ordenação
+                saveMeetingDataToFirestore();
             });
 
             sortOrderSelect.addEventListener('change', (event) => {
                 currentSort = event.target.value;
                 applyFiltersAndSort();
-                saveMeetingData(); // Salva após mudança de filtro/ordenação
+                saveMeetingDataToFirestore();
             });
 
 
-            // Função para formatar a data de AAAA-MM-DD para DD/MM/AAAA
             function formatDateToDDMMYYYY(dateString) {
                 if (!dateString) return '';
                 const [year, month, day] = dateString.split('-');
                 return `${day}/${month}/${year}`;
             }
 
-            // Função para formatar a data de DD/MM/AAAA para AAAA-MM-DD
             function formatDateToYYYYMMDD(dateString) {
                 if (!dateString) return '';
                 const [day, month, year] = dateString.split('/');
                 return `${year}-${month}-${day}`;
             }
 
-            // Função para exibir o modal
             function showModal(title, content) {
                 modalTitle.textContent = title;
                 modalBody.innerHTML = content;
                 responseModal.style.display = 'flex';
             }
 
-            // Função para esconder o modal
             function hideModal() {
                 responseModal.style.display = 'none';
                 modalTitle.textContent = '';
                 modalBody.innerHTML = '';
             }
 
-            // Event listener para fechar o modal
             closeButton.addEventListener('click', hideModal);
             window.addEventListener('click', (event) => {
                 if (event.target == responseModal) {
@@ -1544,7 +1631,6 @@
                 }
             });
 
-            // Função para chamar a API Gemini para gerar resumo geral
             async function generateOverallSummary() {
                 const config = loadConfig();
                 const geminiApiKey = config.geminiApiKey;
@@ -1614,7 +1700,6 @@
                 }
             }
 
-            // Função para adicionar uma nova tarefa a um grupo de responsável
             function appendTaskToResponsibleGroup(responsible, description, deadline, status, priority) {
                 const newTaskItem = document.createElement('div');
                 newTaskItem.classList.add('task-item', 'py-3');
@@ -1643,7 +1728,6 @@
 
                 let targetTaskGroup = document.querySelector(`.task-group[data-responsible="${responsible}"]`);
 
-                // Se o grupo do responsável não existir, cria um novo
                 if (!targetTaskGroup) {
                     targetTaskGroup = document.createElement('div');
                     targetTaskGroup.classList.add('mb-6', 'task-group');
@@ -1665,7 +1749,6 @@
                     newGroupTitle.textContent = `${newGroupNumber}. ${responsible}`;
                     targetTaskGroup.appendChild(newGroupTitle);
 
-                    // Adiciona o formulário inline de adição de tarefas ao novo grupo
                     const inlineFormHtml = `
                         <div class="add-task-inline-form mt-4 p-4 border rounded-lg bg-gray-50 hidden">
                             <h4 class="font-semibold mb-2 text-gray-700">Adicionar Nova Tarefa:</h4>
@@ -1691,7 +1774,6 @@
                     targetTaskGroup.insertAdjacentHTML('beforeend', inlineFormHtml);
 
 
-                    // Encontra a posição correta para inserir o novo grupo para manter a ordem numérica
                     let inserted = false;
                     const allGroups = Array.from(tasksContainer.querySelectorAll('.task-group'));
                     for (let i = 0; i < allGroups.length; i++) {
@@ -1707,13 +1789,10 @@
                         tasksContainer.appendChild(targetTaskGroup);
                     }
 
-                    // Re-numera todos os grupos após a inserção
                     renumberTaskGroups();
 
                 }
 
-                // Adiciona a nova tarefa ao grupo do responsável
-                // Insere antes do formulário inline, se ele existir
                 const inlineFormDiv = targetTaskGroup.querySelector('.add-task-inline-form');
                 if (inlineFormDiv) {
                     targetTaskGroup.insertBefore(newTaskItem, inlineFormDiv);
@@ -1721,77 +1800,67 @@
                     targetTaskGroup.appendChild(newTaskItem);
                 }
 
-                saveMeetingData(); // Chama a função para salvar no localStorage
-                attachListeners(); // Re-anexa os event listeners
-                addInputListeners(); // Re-anexa listeners
-                applyFiltersAndSort(); // Aplica filtros e ordenação após adicionar nova tarefa
+                saveMeetingDataToFirestore();
+                attachListeners();
+                addInputListeners();
+                applyFiltersAndSort();
             }
 
 
-            // Função para remover tarefa
             function removeTask(event) {
                 const taskItemToRemove = event.target.closest('.task-item');
                 const parentTaskGroup = taskItemToRemove.closest('.task-group');
                 taskItemToRemove.remove();
 
-                // Se o grupo de tarefas ficar vazio (e não for o grupo de Apresentações que tem UL), remove o cabeçalho do grupo também
                 if (parentTaskGroup && parentTaskGroup.querySelectorAll('.task-item').length === 0 && parentTaskGroup.querySelectorAll('ul').length === 0) {
                     parentTaskGroup.remove();
-                    renumberTaskGroups(); // Re-numera os grupos após a remoção
+                    renumberTaskGroups();
                 }
-                saveMeetingData(); // Chama a função para salvar no localStorage
-                applyFiltersAndSort(); // Aplica filtros e ordenação após remover tarefa
+                saveMeetingDataToFirestore();
+                applyFiltersAndSort();
             }
 
-            // Função para re-numerar os grupos de tarefas
             function renumberTaskGroups() {
                 const taskGroups = tasksContainer.querySelectorAll('.task-group');
                 let currentNumber = 1;
                 taskGroups.forEach(group => {
                     const h3 = group.querySelector('h3');
-                    // Ignora o grupo de apresentações ao re-numerar, pois ele não tem um número
                     if (h3 && group.dataset.responsible !== "Apresentações") {
-                        const originalText = h3.textContent.replace(/^\d+\.\s*/, ''); // Remove o número antigo
+                        const originalText = h3.textContent.replace(/^\d+\.\s*/, '');
                         h3.textContent = `${currentNumber}. ${originalText}`;
                         currentNumber++;
                     } else if (h3 && group.dataset.responsible === "Apresentações") {
-                        h3.textContent = `Apresentações`; // Garante que o título "Apresentações" não seja numerado
+                        h3.textContent = `Apresentações`;
                     }
                 });
             }
 
 
-            // Função para anexar event listeners para todos os botões dinâmicos
             function attachListeners() {
-                // Remover
                 const currentRemoveButtons = document.querySelectorAll('.remove-task-btn');
                 currentRemoveButtons.forEach(button => {
-                    button.removeEventListener('click', removeTask); // Evita duplicação
+                    button.removeEventListener('click', removeTask);
                     button.addEventListener('click', removeTask);
                 });
 
-                // Toggle formulário inline de adicionar tarefa
                 const toggleFormsButtons = document.querySelectorAll('.toggle-add-task-form-btn');
                 toggleFormsButtons.forEach(button => {
                     button.removeEventListener('click', toggleInlineForm);
                     button.addEventListener('click', toggleInlineForm);
                 });
 
-                // Adicionar tarefa inline
                 const addInlineButtons = document.querySelectorAll('.add-task-inline-btn');
                 addInlineButtons.forEach(button => {
                     button.removeEventListener('click', addInlineTask);
                     button.addEventListener('click', addInlineTask);
                 });
 
-                // Cancelar adição de tarefa inline
                 const cancelInlineButtons = document.querySelectorAll('.cancel-add-task-inline-btn');
                 cancelInlineButtons.forEach(button => {
                     button.removeEventListener('click', cancelInlineTask);
                     button.addEventListener('click', cancelInlineTask);
                 });
 
-                // Apresentações: Adicionar item de lista
                 const addPresentationInlineButtons = document.querySelectorAll('.add-presentation-inline-btn');
                 addPresentationInlineButtons.forEach(button => {
                     button.removeEventListener('click', addInlinePresentation);
@@ -1799,15 +1868,13 @@
                 });
             }
 
-            // Função para alternar a visibilidade do formulário inline
             function toggleInlineForm(event) {
                 const taskGroup = event.target.closest('.task-group');
                 const inlineForm = taskGroup.querySelector('.add-task-inline-form');
                 inlineForm.classList.toggle('hidden');
-                event.target.classList.toggle('hidden'); // Esconde o botão de toggle
+                event.target.classList.toggle('hidden');
             }
 
-            // Função para adicionar tarefa a partir do formulário inline
             function addInlineTask(event) {
                 const inlineForm = event.target.closest('.add-task-inline-form');
                 const taskGroup = inlineForm.closest('.task-group');
@@ -1821,7 +1888,7 @@
                 const deadline = deadlineInput.value;
                 const status = statusInput.value;
                 const priority = priorityInput.value;
-                const responsible = taskGroup.dataset.responsible; // Pega o responsável do data-attribute
+                const responsible = taskGroup.dataset.responsible;
 
                 if (description === "") {
                     showModal('Erro', 'A descrição da tarefa não pode estar vazia.');
@@ -1830,24 +1897,21 @@
 
                 appendTaskToResponsibleGroup(responsible, description, deadline, status, priority);
 
-                // Limpa e esconde o formulário
                 descriptionInput.value = '';
                 deadlineInput.value = '';
                 statusInput.value = 'em-progresso';
                 priorityInput.value = 'media';
                 inlineForm.classList.add('hidden');
-                taskGroup.querySelector('.toggle-add-task-form-btn').classList.remove('hidden'); // Mostra o botão de toggle
+                taskGroup.querySelector('.toggle-add-task-form-btn').classList.remove('hidden');
             }
 
-            // Função para cancelar a adição de tarefa inline
             function cancelInlineTask(event) {
                 const inlineForm = event.target.closest('.add-task-inline-form');
                 const taskGroup = inlineForm.closest('.task-group');
                 inlineForm.classList.add('hidden');
-                taskGroup.querySelector('.toggle-add-task-form-btn').classList.remove('hidden'); // Mostra o botão de toggle
+                taskGroup.querySelector('.toggle-add-task-form-btn').classList.remove('hidden');
             }
 
-            // Função para adicionar item de apresentação inline
             function addInlinePresentation(event) {
                 const inlineForm = event.target.closest('.add-task-inline-form');
                 const presentationsList = inlineForm.closest('.task-group').querySelector('#presentationsList');
@@ -1864,16 +1928,14 @@
                 newLi.textContent = description;
                 presentationsList.appendChild(newLi);
 
-                descriptionInput.value = ''; // Limpa o campo
+                descriptionInput.value = '';
                 inlineForm.classList.add('hidden');
-                inlineForm.closest('.task-group').querySelector('.toggle-add-task-form-btn').classList.remove('hidden'); // Mostra o botão de toggle
-                saveMeetingData(); // Chama a função para salvar no localStorage
+                inlineForm.closest('.task-group').querySelector('.toggle-add-task-form-btn').classList.remove('hidden');
+                saveMeetingDataToFirestore();
             }
 
 
-            // Função para salvar o HTML editado
             saveAsHtmlBtn.addEventListener('click', () => {
-                // Esconde elementos interativos antes de salvar
                 const elementsToHide = document.querySelectorAll('.remove-task-btn, .toggle-add-task-form-btn, .add-task-inline-form, .filter-sort-controls, .add-task-inline-form + button');
                 elementsToHide.forEach(el => el.style.display = 'none');
 
@@ -1888,35 +1950,29 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
 
-                // Restaura a visibilidade dos elementos
                 elementsToHide.forEach(el => el.style.display = '');
             });
 
-            // Função para salvar como PDF
             saveAsPdfBtn.addEventListener('click', () => {
-                // Esconde elementos interativos antes de gerar o PDF
                 const elementsToHide = document.querySelectorAll('.remove-task-btn, .toggle-add-task-form-btn, .add-task-inline-form, #generateOverallSummaryBtn, #saveAsHtmlBtn, #saveAsPdfBtn, .filter-sort-controls, .add-task-inline-form + button');
                 elementsToHide.forEach(el => el.style.display = 'none');
 
-                // Armazena os inputs de data originais para restaurá-los depois
                 const dateInputs = document.querySelectorAll('input[type="date"]');
-                const originalDateInputMap = new Map(); // Mapa para armazenar o input original e seu pai/próximo irmão
+                const originalDateInputMap = new Map();
 
                 dateInputs.forEach((input, index) => {
                     const formattedDate = formatDateToDDMMYYYY(input.value);
                     const textSpan = document.createElement('span');
                     textSpan.textContent = formattedDate;
-                    textSpan.classList.add('pdf-date-placeholder'); // Adiciona uma classe para identificar facilmente esses spans mais tarde
-                    textSpan.style.display = 'inline-block'; // Mantém o layout
+                    textSpan.classList.add('pdf-date-placeholder');
+                    textSpan.style.display = 'inline-block';
 
-                    // Armazena o input original e seu contexto para restauração
                     originalDateInputMap.set(textSpan, { originalInput: input, parent: input.parentNode, nextSibling: input.nextSibling });
 
-                    // Substitui o input pelo span
                     input.parentNode.replaceChild(textSpan, input);
                 });
 
-                const element = document.body; // Ou o elemento que você quer exportar
+                const element = document.body;
 
                 html2pdf(element, {
                     margin: 10,
@@ -1925,7 +1981,6 @@
                     html2canvas: { scale: 2, logging: true, dpi: 192, letterRendering: true },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 }).then(() => {
-                    // Restaura os inputs de data originais
                     originalDateInputMap.forEach((originalData, textSpan) => {
                         const { originalInput, parent, nextSibling } = originalData;
                         if (parent) {
@@ -1934,21 +1989,18 @@
                             } else {
                                 parent.appendChild(originalInput);
                             }
-                            textSpan.remove(); // Remove o span temporário
+                            textSpan.remove();
                         }
                     });
 
-                    // Restaura a visibilidade dos outros elementos
                     elementsToHide.forEach(el => el.style.display = '');
                 });
             });
 
 
-            // Inicializa os event listeners para os botões existentes na carga da página
             attachListeners();
-
-            // Adiciona event listener para o botão de resumo geral
             generateOverallSummaryBtn.addEventListener('click', generateOverallSummary);
+            initAppLogic(); // Inicia a lógica da aplicação, incluindo a autenticação Firebase
         });
     </script>
 </body>
