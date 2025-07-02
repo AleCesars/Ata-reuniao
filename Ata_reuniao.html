@@ -599,7 +599,7 @@
                         <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
                             <label class="text-gray-600">Prazo:</label>
                             <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
-                            <label class="text-gray-600">Estado:</label>
+                            <label class="text-600">Estado:</label>
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
@@ -669,7 +669,7 @@
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
                                 <option value="em-progresso">Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
                                 <option value="alta">Alta</option>
@@ -813,7 +813,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
@@ -835,7 +835,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
@@ -949,7 +949,7 @@
                         <div class="flex items-center justify-between text-sm mt-2 flex-wrap gap-2">
                             <label class="text-gray-600">Prazo:</label>
                             <input type="date" value="2025-07-30" class="text-gray-700 border rounded px-2 py-1 text-sm flex-grow mr-2">
-                            <label class="text-gray-600">Estado:</label>
+                            <label class="text-600">Estado:</label>
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
@@ -1063,6 +1063,7 @@
         <footer class="text-center text-gray-600 text-sm mt-8">
             <p>&copy; 2025 Companhia Athletica. Todos os direitos reservados.</p>
             <p contenteditable="true" class="text-gray-700">Gerado em 25 de Junho de 2025</p>
+            <div id="saveStatus" class="text-xs mt-2 font-medium text-gray-500"></div>
         </footer>
     </div>
 
@@ -1128,6 +1129,7 @@
             const loadingSpinner = document.getElementById('loadingSpinner');
             const tasksContainer = document.getElementById('tasksContainer');
             const userIdDisplay = document.getElementById('userIdDisplay');
+            const saveStatusDisplay = document.getElementById('saveStatus'); // Novo elemento de status
 
             const meetingTitle = document.querySelector('h1[contenteditable="true"]');
             const meetingDate = document.getElementById('meetingDate');
@@ -1277,10 +1279,22 @@
 
             // Função para salvar os dados da reunião no Firestore
             async function saveMeetingDataToFirestore() {
+                console.log('Tentando salvar dados...');
+                console.log('isAuthReady:', isAuthReady);
+                console.log('currentUserId:', currentUserId);
+                console.log('db:', db);
+                console.log('firebaseAppId:', firebaseAppId);
+                console.log('firebaseConfig.apiKey:', firebaseConfig.apiKey);
+
                 if (!isAuthReady || !currentUserId || !db || !firebaseAppId || !firebaseConfig.apiKey) { // Condição atualizada
                     console.warn("Não foi possível salvar os dados: Autenticação não pronta, Firebase não disponível ou configuração não atualizada.");
+                    saveStatusDisplay.textContent = 'Erro: Não foi possível salvar (autenticação/Firebase)';
+                    saveStatusDisplay.style.color = 'red';
                     return;
                 }
+
+                saveStatusDisplay.textContent = 'Salvando...';
+                saveStatusDisplay.style.color = 'orange';
 
                 clearTimeout(saveTimeout); // Limpa qualquer timeout anterior
                 saveTimeout = setTimeout(async () => {
@@ -1319,8 +1333,15 @@
                         const docRef = window.doc(db, 'artifacts', firebaseAppId, 'users', currentUserId, 'meeting_data', FIRESTORE_DOC_ID);
                         await window.setDoc(docRef, meetingData, { merge: true }); // Usa merge para não sobrescrever o documento inteiro
                         console.log('Dados da reunião salvos no Firestore.');
+                        saveStatusDisplay.textContent = 'Salvo!';
+                        saveStatusDisplay.style.color = 'green';
+                        setTimeout(() => {
+                            saveStatusDisplay.textContent = ''; // Limpa a mensagem após um tempo
+                        }, 3000);
                     } catch (e) {
                         console.error('Erro ao salvar dados no Firestore:', e);
+                        saveStatusDisplay.textContent = `Erro ao salvar: ${e.message}`;
+                        saveStatusDisplay.style.color = 'red';
                     }
                 }, 1000); // Salva após 1 segundo de inatividade
             }
