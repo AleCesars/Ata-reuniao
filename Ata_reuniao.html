@@ -24,10 +24,11 @@
         
         // Prioriza a configuração do Firebase fornecida pelo ambiente Canvas
         // Se __firebase_config não estiver definida, usa a configuração hardcoded como fallback.
+        // IMPORTANTE: Certifique-se de que o 'projectId' aqui ou em __firebase_config corresponde ao seu projeto Firebase real.
         window.firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
           apiKey: "AIzaSyCIpIaQahDGpEZ8jy7GDc_RxDGdv60uMvQ",
           authDomain: "atareuniao.firebaseapp.com",
-          projectId: "atareuniao",
+          projectId: "atareuniao", // <--- VERIFIQUE ESTE ID DO PROJETO NO SEU CONSOLE FIREBASE
           storageBucket: "atareuniao.firebasestorage.app",
           messagingSenderId: "953103743555",
           appId: "1:953103743555:web:12735fdbae9100fb0b72f6",
@@ -515,7 +516,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-alta">
@@ -717,7 +718,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
@@ -931,7 +932,7 @@
                             <select class="status-select border rounded px-2 py-1 text-sm status-em-progresso">
                                 <option value="em-progresso" selected>Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <label class="text-gray-600">Prioridade:</label>
                             <select class="priority-select border rounded px-2 py-1 text-sm priority-media">
@@ -975,7 +976,7 @@
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
                                 <option value="em-progresso">Em Progresso</option>
                                 <option value="pendente">Pendente</option>
-                                <option value="concluido">Concluído</option>
+                                <option value="concluido">Concluido</option>
                             </select>
                             <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
                                 <option value="alta">Alta</option>
@@ -1330,6 +1331,9 @@
                             }
                         });
 
+                        // IMPORTANTE: O caminho do documento no Firestore deve corresponder às suas regras de segurança.
+                        // Para dados privados do usuário, o caminho deve ser:
+                        // /artifacts/{appId}/users/{userId}/meeting_data/{documentId}
                         const docRef = window.doc(db, 'artifacts', firebaseAppId, 'users', currentUserId, 'meeting_data', FIRESTORE_DOC_ID);
                         await window.setDoc(docRef, meetingData, { merge: true }); // Usa merge para não sobrescrever o documento inteiro
                         console.log('Dados da reunião salvos no Firestore.');
@@ -1354,6 +1358,9 @@
                     return;
                 }
 
+                // IMPORTANTE: O caminho do documento no Firestore deve corresponder às suas regras de segurança.
+                // Para dados privados do usuário, o caminho deve ser:
+                // /artifacts/{appId}/users/{userId}/meeting_data/{documentId}
                 const docRef = window.doc(db, 'artifacts', firebaseAppId, 'users', currentUserId, 'meeting_data', FIRESTORE_DOC_ID);
 
                 // Usa onSnapshot para atualizações em tempo real
@@ -1779,7 +1786,7 @@
                                 <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-status-input-inline">
                                     <option value="em-progresso">Em Progresso</option>
                                     <option value="pendente">Pendente</option>
-                                    <option value="concluido">Concluído</option>
+                                    <option value="concluido">Concluido</option>
                                 </select>
                                 <select class="shadow-sm border rounded w-1/4 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline task-priority-input-inline">
                                     <option value="alta">Alta</option>
